@@ -971,6 +971,9 @@ I_i(E)=\left[\min_{u\in\mathcal U_i(E)}a_{iu},\ \max_{u\in\mathcal U_i(E)}b_{iu}
 \FloatBarrier
 \paragraph{总体结构与解释接口}
 图\ref{q3:fig:arch}给出问题三的预测器与解释层结构。模型先以三态观测输入完成情感预测，再在同一冻结预测器上分别进行模态联盟干预和局部片段干预；前者输出模态贡献与主要参考模态，后者输出关键证据位置，最后通过词级时间区间和视频PTS回映至原始素材。解释层不另行训练预测器，因而解释结果与预测结果来自同一模型输出。
+
+预测器只保留三态投影、时序编码、模态池化与双任务头，不含补全、门控与蒸馏分支，被删除的信息在后续计算中保持缺失，不会被重建路径补回，删除响应因此对应输入证据本身的变化。两级干预面向两种解释粒度：模态层回答当前判断主要依赖哪一路信息，片段层回答该路信息中的哪些词或时段起了作用；二者的干预对象与价值函数分别定义，整体贡献与局部证据不相互混入。
+
 \begin{figure}[H]\centering
 \begin{tikzpicture}[font=\small,
  box/.style={draw=black!65,fill=black!3,text width=8.8cm,align=center,minimum height=8mm,inner sep=4pt},
@@ -992,49 +995,57 @@ I_i(E)=\left[\min_{u\in\mathcal U_i(E)}a_{iu},\ \max_{u\in\mathcal U_i(E)}b_{iu}
 
 \FloatBarrier
 \paragraph{三态投影与时序编码}
-令$s^m_{ik}\in\{0,1,2\}$分别表示结构填充、已观测和内容缺失。最终采用单层预测器，其输入表示为
+令$s^m_{ik}\in\{0,1,2\}$分别表示结构填充、已观测和内容缺失。三种状态各有一套嵌入，使模型能够区分“该位置不存在”与“该位置存在但观测不可用”。最终采用单层预测器，其输入表示为
 \begin{equation}
 z^m_{ik}=\operatorname{Lin}_m(X^m_{ik})+e_m^{\mathrm{mod}}+e_k^{\mathrm{pos}}+e^{\mathrm{state}}_{s^m_{ik}},\qquad
 \widetilde z^m_{ik}=O^m_{ik}z^m_{ik}+P_{ik}(1-O^m_{ik})e_m^{\mathrm{miss}}.
 \end{equation}
-按内容长度打包序列，分别输入逐模态双向GRU，避免结构填充参与递归。设隐藏维度为$d$，对各模态内容位的编码结果$h^m_{ik}$分别取均值与最大值，再拼接观测比例：
+
+缺失位置由模态相关的缺失嵌入$e_m^{\mathrm{miss}}$替代：序列长度与位置索引保持不变，删除只在输入取值层面生效，不改变时间轴。按内容长度打包序列，分别输入逐模态双向GRU，避免结构填充参与递归。设隐藏维度为$d$，对各模态内容位的编码结果$h^m_{ik}$分别取均值与最大值，再拼接观测比例：
 \begin{equation}
 u_i=\operatorname{Concat}_{m\in\mathcal M}\left(\frac1{L_i}\sum_kh^m_{ik},\max_kh^m_{ik}\right)
 \mathbin\Vert[\rho_i^t,\rho_i^a,\rho_i^v],\qquad h_i=\operatorname{MLP}(u_i).
 \end{equation}
-融合向量维度为$6d+3$，分类与回归头分别输出
+
+均值概括模态内部的总体倾向，最大值捕捉局部显著响应，观测比例$\rho_i^m$给出该模态证据的可用程度，三者共同形成样本级表示。融合向量维度为$6d+3$，分类与回归头分别输出
 \begin{equation}
 p_i=\operatorname{softmax}(W_ch_i+b_c),\qquad \widehat r_i=3\tanh(W_rh_i+b_r).
 \end{equation}
 
+强度输出经$3\tanh$限幅至$[-3,3]$，与标签取值范围一致。
+
 \FloatBarrier
 \paragraph{子集训练与目标函数}
-最终采用C0方案：以0.70的概率保留全部模态，其余0.30均匀分配给7个非完整联盟，包含空集。对采样联盟$S_i$，令$\widetilde O^m_{ik}=O^m_{ik}\mathbf1\{m\in S_i\}$。训练目标为
+解释层需要对任意模态联盟求值：Shapley贡献要在全部8个子集上计算输出，片段删除也要求模型在部分观测缺失时仍然有效。若只在完整输入上训练，联盟输入会成为分布外样本，输出变化将混入分布外效应。为此最终采用C0方案：以0.70的概率保留全部模态，其余0.30均匀分配给7个非完整联盟，包含空集；完整输入保持为主要训练分布，非完整组合同时进入训练。对采样联盟$S_i$，令$\widetilde O^m_{ik}=O^m_{ik}\mathbf1\{m\in S_i\}$。训练目标为
 \begin{equation}
 \mathcal L_3=\operatorname{CE}_w(y_i,p_i)+\operatorname{Huber}_1(r_i,\widehat r_i)
 +0.2\left[(p_{i,+}-p_{i,-})-\tanh(\widehat r_i/3)\right]^2.
 \end{equation}
-类别权重由训练集频数确定，Huber损失拟合连续强度，最后一项约束两类输出的方向一致性。该方案覆盖模态联盟输入；连续片段遮挡增广及更深网络作为候选变体单独比较。
+
+类别权重由训练集频数确定，缓解三类样本不均衡；Huber损失拟合连续强度，对大偏差样本保持稳健；最后一项约束正向与负向概率之差同强度符号的方向一致性，使两个输出头在同一表示上协同。该方案覆盖模态联盟输入；连续片段遮挡增广及更深网络作为候选变体单独比较。
 
 \FloatBarrier
 \paragraph{模态贡献与主要参考模态}
-以三种子平均概率$\bar p_i$确定原始可用输入的参考类别$c_i^*=\arg\max_c\bar p_{ic}(\mathcal A_i)$，解释全过程固定该类别。对联盟$S\subseteq\mathcal M$，定义
+以三种子平均概率$\bar p_i$确定原始可用输入的参考类别$c_i^*=\arg\max_c\bar p_{ic}(\mathcal A_i)$，解释全过程固定该类别，使所有干预以同一决策为比较对象，避免类别切换混入贡献。对联盟$S\subseteq\mathcal M$，定义
 \begin{equation}
 F_i^{\mathrm{cls}}(S)=\log\frac{\bar p_{i,c_i^*}(S)}{1-\bar p_{i,c_i^*}(S)},\qquad
 F_i^{\mathrm{reg}}(S)=\overline{\widehat r}_i(S).
 \end{equation}
-数值计算时将概率截断至$[10^{-6},1-10^{-6}]$。对分类与强度分别计算Shapley贡献：
+
+概率经log-odds变换到无界尺度，价值差可以直接相减；数值计算时将概率截断至$[10^{-6},1-10^{-6}]$以保证稳定。对分类与强度分别计算Shapley贡献：
 \begin{equation}
 \phi_i^m=\sum_{S\subseteq\mathcal M\setminus\{m\}}\frac{|S|!(2-|S|)!}{3!}
 \left[F_i(S\cup\{m\})-F_i(S)\right],\qquad
 \sum_{m\in\mathcal A_i}\phi_i^m=F_i(\mathcal A_i)-F_i(\varnothing).
 \end{equation}
-贡献为正表示相对基线抬高价值，为负表示压低价值。以分类贡献绝对值最大的可用模态为主要参考模态，作用份额定义为
+
+三个模态只构成8个联盟，可以精确枚举，不需要蒙特卡洛近似；效率性等式同时作为实现的数值核验。贡献为正表示相对基线抬高价值，为负表示压低价值。以分类贡献绝对值最大的可用模态为主要参考模态，作用份额定义为
 \begin{equation}
 m_i^*=\arg\max_{m\in\mathcal A_i}|\phi_i^{m,\mathrm{cls}}|,\qquad
 \omega_i^m=\frac{|\phi_i^{m,\mathrm{cls}}|}{\sum_{j\in\mathcal A_i}|\phi_i^{j,\mathrm{cls}}|}.
 \end{equation}
-当总贡献幅度小于$10^{-8}$时标记为无法区分；其余同时报告作用份额与有符号贡献，以区分作用大小和方向。
+
+有符号贡献描述作用方向，作用份额描述作用大小，两者分别报告。当总贡献幅度小于$10^{-8}$时标记为无法区分。
 
 \FloatBarrier
 \paragraph{局部证据与解释评价}
@@ -1042,9 +1053,10 @@ m_i^*=\arg\max_{m\in\mathcal A_i}|\phi_i^{m,\mathrm{cls}}|,\qquad
 \begin{equation}
 \Delta_i^m(E)=F_i^{\mathrm{cls}}(\mathcal A_i)-F_i^{\mathrm{cls,del}(m,E)}.
 \end{equation}
+
 $\Delta_i^m(E)>0$表示该片段支持参考类别，小于零表示抑制参考类别。另定义强度响应$\Delta_i^{m,\mathrm{reg}}(E)=\hat r_i-\hat r_i^{\mathrm{del}(m,E)}$，正、负值分别表示该片段抬高、降低预测强度。两个任务分别以贡献绝对值确定主要模态，并在各可用模态中选择绝对局部响应最大的片段作为关键证据，保留符号方向。分类删除检验仍按有符号响应降序，强度删除检验按绝对强度响应排序。
 
-在主要参考模态中，按块数的10\%、20\%、30\%向上取整，分别累计删除高分块、低分块和随机块；随机顺序重复3次，并报告实际锚点覆盖率。以三个删除档位的平均概率下降定义AOPC，按样本配对比较高分与随机删除，采用2000次bootstrap估计区间。条件充分性保留其他模态及主要模态的高分块，计算相对原预测的绝对概率偏差。另以训练集同位置均值（B2）和模态内顺序打乱（B3）替代缺失状态基线（B1），比较主模态一致率及贡献排序。
+解释评价检验的是证据排序与模型响应是否一致。在主要参考模态中，按块数的10\%、20\%、30\%向上取整，分别累计删除高分块、低分块和随机块；随机顺序重复3次，并报告实际锚点覆盖率。以三个删除档位的平均概率下降定义AOPC，按样本配对比较高分与随机删除，采用2000次bootstrap估计区间：若高分块确实承载判断依据，删除它们造成的参考类别概率下降应大于随机删除。条件充分性保留其他模态及主要模态的高分块，计算相对原预测的绝对概率偏差，考察高分块在多大程度上替代完整输入。另以训练集同位置均值（B2）和模态内顺序打乱（B3）替代缺失状态基线（B1），比较主模态一致率及贡献排序，检验解释结论对基线取法的敏感性。
 
 \FloatBarrier
 \subsubsection{模型求解与参数设置}
