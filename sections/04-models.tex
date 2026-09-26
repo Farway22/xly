@@ -510,7 +510,15 @@ C^{m,n}_{i,k,j}&=\frac{\|q^m_{ik}-\kappa^n_{ij}\|_2^2}{d}
 上述代价综合表示距离、位置距离和观测连续性，其中时间项赋予邻近锚点较高的候选优先级，连续性项抑制孤立观测的权重；温度$\tau$控制权重在候选间的集中程度，取值较小时结果接近最近候选，取值较大时趋于候选均值。候选范围覆盖样本内全部可用模态，因而兼顾同模态时序信息与跨模态关联信息。
 
 \paragraph{可靠度门控与情感预测}
-依据加权代价均值、加权方差、最小有效代价、候选数量占比及目标模态可用比例，构造门控输入
+对候选代价按补全权重聚合，得到门控所需的三个统计量：
+\begin{equation}
+\begin{aligned}
+\overline C^{m}_{ik}&=\sum_{(n,j)\in\Omega_i}\pi^{m,n}_{i,k,j}C^{m,n}_{i,k,j},\qquad
+C_{\min}=\min_{(n,j)\in\Omega_i}C^{m,n}_{i,k,j},\\
+\operatorname{Var}_{\pi}(C)&=\sum_{(n,j)\in\Omega_i}\pi^{m,n}_{i,k,j}\left(C^{m,n}_{i,k,j}-\overline C^{m}_{ik}\right)^2.
+\end{aligned}
+\end{equation}
+以三者与候选数量占比、目标模态可用比例构造门控输入
 \begin{equation}
 g^m_{ik}=\left[\overline C,\operatorname{Var}_{\pi}(C),C_{\min},
 |\Omega_i|/(3\cdot50),a_i^m,e_m^{\mathrm{mod}}\right],\qquad
@@ -522,7 +530,7 @@ z^{m,f}_{ik}=\widetilde O^m_{ik}z^m_{ik}
 +P_{ik}(1-\widetilde O^m_{ik})
 \left[\rho^m_{ik}\hat z^m_{ik}+(1-\rho^m_{ik})e_m^{\mathrm{miss}}\right].
 \end{equation}
-门控输入同时刻画补全的质量与可用证据：加权代价均值与最小代价反映候选的匹配程度，加权方差反映候选之间的分歧，候选数量占比与模态可用比例反映可检索证据与模态自身的完整度。门控权重$\rho$调节补全表示对融合结果的贡献，观测位置的表示保持不变，缺失位置在补全与缺失嵌入之间按$\rho$加权。当候选集为空时，令$\pi=0,\rho=0$，以缺失嵌入完成回退。
+门控输入同时刻画补全的质量与可用证据：加权代价均值与最小代价反映候选的匹配程度，加权方差反映候选之间的分歧，候选数量占比与模态可用比例反映可检索证据与模态自身的完整度。其中$e_m^{\mathrm{miss}}$为模态$m$的可学习缺失嵌入，$\rho^m_{ik}\in(0,1)$由两层感知机给出，调节补全表示对融合结果的贡献。观测位置的表示保持不变，缺失位置在补全与缺失嵌入之间按$\rho$加权；当候选集为空时，令$\pi=0,\rho=0$，以缺失嵌入完成回退。
 
 锚点顺序承载情感的时序演变，因此对每个模态独立进行单层双向GRU编码，双向隐状态合计64维；缺失位置经融合后已有表示，递归过程面对的是完整序列。实现中按有效前缀打包序列，避免尾部填充通过反向递归污染内容位置。池化只在$P=1$处计算均值与最大值，使结构化填充不参与统计；拼接三模态池化向量与可用比例$a_i^t,a_i^a,a_i^v$，形成$6d+3=387$维向量，经共享MLP得到$h_i$。双任务输出为
 \begin{equation}
@@ -541,7 +549,7 @@ p_i=\operatorname{softmax}(W_ch_i+b_c),\qquad
 +\lambda_r\operatorname{Huber}_1(r,\hat r^S)
 +\lambda_c\left[(p^S_{+}-p^S_{-})-\tanh(\hat r^S/3)\right]^2,
 \end{equation}
-设训练集样本量为$N$，类别$c$的样本量为$N_c$，取$w_c=N/(3N_c)$。对训练批次$\mathcal B$，分类损失按实际样本权重归一化：
+其中$p^S_+$与$p^S_-$分别为正、负类别的预测概率，$\lambda_r$与$\lambda_c$为回归项与一致性项权重，$\operatorname{Huber}_\delta$表示$\delta$尺度的Huber损失，$\delta=1$时与$\beta=1$的平滑L1损失一致。设训练集样本量为$N$，类别$c$的样本量为$N_c$，取$w_c=N/(3N_c)$。对训练批次$\mathcal B$，分类损失按实际样本权重归一化：
 \begin{equation}
 \label{q2:eq:class_weight}
 \operatorname{CE}_w(y,p^S)=-\frac{\sum_{i\in\mathcal B}w_{y_i}\log p^S_{i,y_i}}
@@ -560,11 +568,18 @@ $\sg$表示停止梯度。训练采用样本等权的蒸馏损失，并离线缓
 \begin{equation}
 \mathcal L_{\mathrm{rec}}=\frac{1}{|\mathcal M_H|}\sum_{m\in\mathcal M_H}
 \frac{1}{|\mathcal H_m|}\sum_{(i,k)\in\mathcal H_m}
-\operatorname{SmoothL1}_1\left(D_m(\hat z^m_{ik}),\bar X^{m,\mathrm{true}}_{ik}\right),
+\operatorname{Huber}_1\left(D_m(\hat z^m_{ik}),\bar X^{m,\mathrm{true}}_{ik}\right),
 \end{equation}
-其中每个向量的损失对特征维取均值，$\mathcal M_H$为当前批次存在人工遮挡的模态集合。重建只在人工遮挡位置计算：这些位置同时具备缺口输入与被遮挡前的真值，自然缺失位置没有可比的原始观测。重建目标为标准化后的原始特征，解码头与学生网络共同训练。
+其中$\bar X^{m,\mathrm{true}}_{ik}$为人工遮挡前的标准化特征，$\mathcal M_H$为当前批次存在人工遮挡的模态集合，每个向量的损失对特征维取均值。重建只在人工遮挡位置计算：这些位置同时具备缺口输入与被遮挡前的真值，自然缺失位置没有可比的原始观测。重建目标为标准化后的原始特征，解码头与学生网络共同训练。
 
-分别计算补全和回退表示相对真值的逐位置平均绝对误差$e_{\mathrm{rec}},e_{\mathrm{fal}}$，构造
+补全表示与回退表示经同一解码头映射回特征空间，二者相对真值的逐位置平均绝对误差为
+\begin{equation}
+\begin{aligned}
+e_{\mathrm{rec}}&=\frac{1}{|\mathcal H_m|}\sum_{(i,k)\in\mathcal H_m}\frac{1}{d}\left\|D_m(\hat z^m_{ik})-\bar X^{m,\mathrm{true}}_{ik}\right\|_1,\\
+e_{\mathrm{fal}}&=\frac{1}{|\mathcal H_m|}\sum_{(i,k)\in\mathcal H_m}\frac{1}{d}\left\|D_m(e_m^{\mathrm{miss}})-\bar X^{m,\mathrm{true}}_{ik}\right\|_1,
+\end{aligned}
+\end{equation}
+据此构造门控监督目标
 \begin{equation}
 \rho^*=\sg\left[\sigma\left((e_{\mathrm{fal}}-e_{\mathrm{rec}})/\tau_{\rho}\right)\right],\qquad
 \mathcal L_{\mathrm{rel}}=\operatorname{BCE}(\rho,\rho^*).
@@ -590,6 +605,7 @@ $\sg$表示停止梯度。训练采用样本等权的蒸馏损失，并离线缓
 \paragraph{选模准则与关键参数}
 模型以验证集联合指标选择训练轮次：
 \begin{equation}
+\label{q2:eq:sel}
 J=0.5F_{\mathrm{base}}+0.5\left(\frac14\sum_{c\in\mathcal C}F_c\right)
 -0.1\operatorname{MAE}_{\mathrm{base}},\quad
 \mathcal C=\{t,a,v,tav\}\text{的居中8锚点缺口}.
@@ -640,7 +656,7 @@ J=0.5F_{\mathrm{base}}+0.5\left(\frac14\sum_{c\in\mathcal C}F_c\right)
 \textbf{输出：}按验证集联合准则选出的学生参数$\{\theta_S^{*(s)}\}_{s=0}^{2}$。\par
 \medskip\noindent
 \begin{tabularx}{\linewidth}{@{}r@{\quad}Y@{}}
-1 & 构建$P,O$；仅用训练集拟合标准化统计量，并由类别频数计算$w_c=N/(3N_c)$。\\
+1 & 构建$P,O$；仅用训练集拟合标准化统计量，由类别频数计算$w_c=N/(3N_c)$，并预生成含文本类的遮挡编码库。\\
 2 & \textbf{对每个}随机种子$s\in\{0,1,2\}$，\textbf{执行}：\\
 3 & \quad 用训练集学习EMT-DLFR教师，结合基础/遮挡标签监督及双层恢复目标。\\
 4 & \quad 按验证集$J$保存教师并冻结；仅缓存训练样本在无新增遮挡输入上的输出。\\
@@ -658,14 +674,13 @@ J=0.5F_{\mathrm{base}}+0.5\left(\frac14\sum_{c\in\mathcal C}F_c\right)
 16 & \qquad\quad 仅在人工遮挡位计算$\mathcal L_{\mathrm{rec}},\mathcal L_{\mathrm{rel}}$；可靠度目标停止梯度。\\
 17 & \qquad\quad 按式\eqref{q2:eq:total_loss}汇总损失；反向传播、梯度裁剪，使用AdamW更新学生。\\
 18 & \qquad \textbf{结束批次循环}；更新余弦学习率。\\
-19 & \qquad 在验证集基础输入及四类固定局部缺口上计算$J$，评价时不更新模型参数。\\
+19 & \qquad 在验证集基础输入及$t/a/v/tav$居中8锚点缺口上按式\eqref{q2:eq:sel}计算$J$，评价时不更新模型参数。\\
 20 & \qquad 若$J>J^*$，保存学生参数并更新$J^*$；否则连续8轮无改善时提前停止。\\
 21 & \quad \textbf{结束轮次循环}，恢复最优学生参数$\theta_S^{*(s)}$。\\
 22 & \textbf{结束种子循环}；返回三组学生参数，用于冻结后的概率与强度集成。\\
 \end{tabularx}\par
 \medskip\noindent
-\textbf{说明：}辅助权重为0时跳过对应损失；某批次没有人工遮挡时，重建与可靠度损失置零。
-附件3不进入本算法的训练和选模过程。
+\textbf{说明：}辅助权重为0时跳过对应损失；某批次没有人工遮挡时，重建与可靠度损失置零。三个种子使用同一数据划分与同一选模协议，仅随机种子不同。候选检索对每个缺失位遍历样本内观测节点，单样本开销为$O(3K|\Omega_i|d)$，在$K=50$与$d=64$下规模可控。附件3不进入本算法的训练和选模过程。
 \end{algorithm}
 
 \begin{figure}[htbp]\centering
