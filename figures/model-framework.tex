@@ -1,25 +1,95 @@
 \begin{tikzpicture}[
-  box/.style={draw=black!45,fill=black!3,rounded corners=2pt,
-    text width=4.55cm,minimum height=1.12cm,align=center,font=\small},
-  arrow/.style={-{Latex[length=2mm]},thick,draw=black!65}]
-\node[font=\small\bfseries] at (0,0.55) {问题一：特征与时间组织};
-\node[font=\small\bfseries] at (5.2,0.55) {问题二：局部缺失预测};
-\node[font=\small\bfseries] at (10.4,0.55) {问题三：贡献与证据解释};
-\node[box,fill=blue!6] (a1) at (0,-0.45) {附件1：100条原始视频\\官方转写与音视频信号};
-\node[box,fill=green!6] (b1) at (5.2,-0.45) {附件2：训练与验证\\附件3：专项预测};
-\node[box,fill=orange!7] (c1) at (10.4,-0.45) {附件2：训练与验证\\附件4：预测与证据回映};
-\node[box] (a2) at (0,-2.05) {文本、语音与视觉特征\\CTC原词区间与子词归属};
-\node[box] (b2) at (5.2,-2.05) {三态掩码与观测节点补全\\可靠度门控与双向时序编码};
-\node[box] (c2) at (10.4,-2.05) {模态子集训练与双任务预测\\固定参考类别的联盟分解};
-\node[box] (a3) at (0,-3.65) {时间交叠池化\\覆盖率与边界扰动分析};
-\node[box] (b3) at (5.2,-3.65) {标签、蒸馏与重建联合目标\\缺失因素分析与组件消融};
-\node[box] (c3) at (10.4,-3.65) {局部删除与忠实性检验\\种子及解释基线敏感性};
-\node[box,fill=blue!6] (a4) at (0,-5.25) {100条自主特征与时间记录\\三模态维度：768/25/16};
-\node[box,fill=green!6] (b4) at (5.2,-5.25) {附件3全部30条预测\\情感极性与连续强度};
-\node[box,fill=orange!7] (c4) at (10.4,-5.25) {附件4全部20条预测与解释\\模态贡献与原始关键片段};
-\foreach \prefix in {a,b,c} {
-  \draw[arrow] (\prefix1)--(\prefix2);
-  \draw[arrow] (\prefix2)--(\prefix3);
-  \draw[arrow] (\prefix3)--(\prefix4);
-}
+  panel/.style={draw,thick,rounded corners=5pt},
+  ptitle/.style={rounded corners=2.5pt,draw,minimum width=5.1cm,minimum height=0.52cm,font=\small\bfseries},
+  grp/.style={draw=black!38,dashed,rounded corners=2.5pt},
+  glabel/.style={font=\footnotesize\bfseries,text=black!75},
+  chip/.style={draw=black!45,fill=white,rounded corners=2pt,align=center,font=\scriptsize,inner sep=2pt,minimum height=0.55cm},
+  inchip/.style={draw=black!50,dashed,fill=black!2,rounded corners=2pt,align=center,font=\scriptsize,inner sep=2pt,minimum height=0.55cm},
+  outchip/.style={draw,rounded corners=2.5pt,align=center,font=\footnotesize,inner sep=3pt,minimum height=0.8cm},
+  data/.style={draw=black!55,fill=white,rounded corners=3pt,align=center,font=\small,inner sep=4pt},
+  flow/.style={-{Latex[length=1.7mm]},draw=black!70,semithick},
+  dflow/.style={-{Latex[length=1.7mm]},draw=black!55,dashed,semithick}
+]
+
+% ---------- 数据来源 ----------
+\node[data] (d1) at (0,0.72) {附件1\ 原始视频（100条）};
+\node[data,text width=5.8cm] (d2) at (9.0,0.72) {附件2\ 标准化多模态特征\\（对齐与非对齐各4850条）};
+\draw[flow] (0,0.36) -- (0,0);
+\draw[flow] (6.4,0.14) -- (6.0,0);
+\draw[flow] (11.6,0.14) -- (12.0,0);
+
+% ---------- 问题一面板 ----------
+\draw[panel,draw=blue!55!black] (-2.8,0) rectangle (2.8,-9.15);
+\node[ptitle,fill=blue!8,draw=blue!55!black] at (0,-0.42) {问题一\quad 特征提取与时序对齐};
+\draw[grp] (-2.65,-1.15) rectangle (2.65,-2.62);
+\node[glabel,anchor=west] at (-2.55,-1.38) {三模态特征};
+\node[chip,text width=1.45cm] at (-1.8,-2.15) {文本语义};
+\node[chip,text width=1.45cm] at (0,-2.15) {语音韵律};
+\node[chip,text width=1.45cm] at (1.8,-2.15) {面部运动};
+\draw[grp] (-2.65,-2.85) rectangle (2.65,-5.32);
+\node[glabel,anchor=west] at (-2.55,-3.08) {词级对齐};
+\node[chip,text width=1.35cm] (a1) at (-1.8,-3.78) {CTC区间};
+\node[chip,text width=1.35cm] (a2) at (0,-3.78) {子词归属};
+\node[chip,text width=1.35cm] (a3) at (1.8,-3.78) {交叠池化};
+\draw[flow] (a1) -- (a2);
+\draw[flow] (a2) -- (a3);
+\node[chip,text width=3.6cm] at (0,-4.75) {有效长度、掩码与时间记录};
+\draw[grp] (-2.65,-5.55) rectangle (2.65,-6.90);
+\node[glabel,anchor=west] at (-2.55,-5.78) {质量评价};
+\node[chip,text width=1.7cm] at (-1.0,-6.45) {覆盖率检验};
+\node[chip,text width=1.7cm] at (1.0,-6.45) {边界扰动};
+\node[inchip,text width=3.2cm] at (0,-7.55) {附件1\ 全部100条};
+\draw[flow] (0,-7.85) -- (0,-8.05);
+\node[outchip,fill=blue!12,draw=blue!55!black,text width=4.3cm] at (0,-8.50) {自主时序特征与时间记录\\（768/25/16维）};
+
+% ---------- 问题二面板 ----------
+\draw[panel,draw=teal!60!black] (3.2,0) rectangle (8.8,-9.15);
+\node[ptitle,fill=teal!8,draw=teal!60!black] at (6.0,-0.42) {问题二\quad 局部缺失下的情感预测};
+\draw[grp] (3.35,-1.15) rectangle (8.65,-2.62);
+\node[glabel,anchor=west] at (3.45,-1.38) {缺失建模};
+\node[chip,text width=1.35cm] (b1) at (4.2,-2.15) {三态掩码};
+\node[chip,text width=1.35cm] (b2) at (6.0,-2.15) {观测补全};
+\node[chip,text width=1.35cm] (b3) at (7.8,-2.15) {门控融合};
+\draw[flow] (b1) -- (b2);
+\draw[flow] (b2) -- (b3);
+\draw[grp] (3.35,-2.85) rectangle (8.65,-5.32);
+\node[glabel,anchor=west] at (3.45,-3.08) {预测与训练};
+\node[chip,text width=1.45cm] at (4.2,-3.78) {双任务预测};
+\node[chip,text width=1.45cm] at (6.0,-3.78) {教师软目标};
+\node[chip,text width=1.45cm] at (7.8,-3.78) {逆频率加权};
+\node[chip,text width=3.6cm] at (6.0,-4.75) {标签、蒸馏与重建联合目标};
+\draw[grp] (3.35,-5.55) rectangle (8.65,-6.90);
+\node[glabel,anchor=west] at (3.45,-5.78) {缺失因素分析};
+\node[chip,text width=2.3cm] at (4.7,-6.45) {类型·位置·时长};
+\node[chip,text width=2.3cm] at (7.3,-6.45) {缺失率·组件消融};
+\node[inchip,text width=3.4cm] at (6.0,-7.55) {附件3\ 无标签测试（30条）};
+\draw[flow] (6.0,-7.85) -- (6.0,-8.05);
+\node[outchip,fill=teal!10,draw=teal!60!black,text width=4.3cm] at (6.0,-8.50) {极性与强度的全量预测};
+
+% ---------- 问题三面板 ----------
+\draw[panel,draw=orange!80!black] (9.2,0) rectangle (14.8,-9.15);
+\node[ptitle,fill=orange!12,draw=orange!80!black] at (12.0,-0.42) {问题三\quad 可解释性情感预测};
+\draw[grp] (9.35,-1.15) rectangle (14.65,-2.62);
+\node[glabel,anchor=west] at (9.45,-1.38) {干预训练};
+\node[chip,text width=1.9cm] (c1) at (10.65,-2.15) {模态子集输入};
+\node[chip,text width=1.9cm] (c2) at (13.35,-2.15) {双任务预测};
+\draw[flow] (c1) -- (c2);
+\draw[grp] (9.35,-2.85) rectangle (14.65,-5.32);
+\node[glabel,anchor=west] at (9.45,-3.08) {贡献分解};
+\node[chip,text width=1.9cm] (c3) at (10.65,-3.78) {固定参考类别};
+\node[chip,text width=1.9cm] (c4) at (13.35,-3.78) {模态联盟分解};
+\draw[flow] (c3) -- (c4);
+\node[chip,text width=3.6cm] at (12.0,-4.75) {分类与强度的模态贡献};
+\draw[grp] (9.35,-5.55) rectangle (14.65,-6.90);
+\node[glabel,anchor=west] at (9.45,-5.78) {证据定位与检验};
+\node[chip,text width=1.9cm] at (10.65,-6.45) {局部删除定位};
+\node[chip,text width=1.9cm] at (13.35,-6.45) {忠实性检验};
+\node[inchip,text width=3.4cm] at (12.0,-7.55) {附件4\ 无标签测试（20条）};
+\draw[flow] (12.0,-7.85) -- (12.0,-8.05);
+\node[outchip,fill=orange!14,draw=orange!80!black,text width=4.3cm] at (12.0,-8.50) {预测、主要模态与关键证据};
+
+% ---------- 问题间方法联系 ----------
+\draw[dflow] (0,-9.15) -- (0,-9.75) -- (12.0,-9.75) -- (12.0,-9.15);
+\node[fill=white,font=\scriptsize,inner sep=2pt] at (6.0,-9.75) {问题三复用词级对齐方法};
+
 \end{tikzpicture}
