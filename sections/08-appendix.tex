@@ -22,6 +22,13 @@
 \end{tabularx}
 \end{table}
 
+\section{问题二结果文件与交付说明}
+\label{app:q2-files}
+
+附件3的完整预测按原始样本顺序导出为\file{pred\_附件3.csv}，逐条给出预测极性、连续强度、三类概率、内容锚点数与三模态缺失计数，并附强度预测的种子间标准差；三类概率的排序、极性判决与强度符号可直接由该文件复核。
+
+附件2上的评价结果与核验记录同步保留：\file{metrics.csv}保存十类模型在基础输入与105种连续缺失条件下的逐条件、逐种子分类与回归指标；\file{paired\_comparison.csv}保存相对九类基线的配对bootstrap区间与Holm校正结果；\file{mask\_audit.json}逐条件记录内容位、人工缺口与观测删除的核验值；\file{protocol.json}保存训练与评价协议参数及21个检查点的SHA-256哈希；\file{checks.json}保存划分、掩码与推理设备的一致性检查结果。上述文件与模型权重、逐种子训练日志随支撑材料一并提交。
+
 \section{问题二专项模型核心代码}
 \label{app:q2-code}
 
