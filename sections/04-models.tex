@@ -492,7 +492,7 @@ e_m^{\mathrm{mod}}+e_{s^m_{ik}}^{\mathrm{state}}+e_k^{\mathrm{pos}}\right).
 q^m_{ik}=Q(e_k^{\mathrm{pos}}+e_m^{\mathrm{mod}}+e_2^{\mathrm{state}}),\quad
 \kappa^n_{ij}=K_z(z^n_{ij}),\quad v^n_{ij}=V_z(z^n_{ij}),
 \end{equation}
-其中$Q,K_z,V_z$为可学习仿射映射。缺失位置没有自身观测，其表示只能由样本内其他有效节点估计；查询由目标位置、模态与缺失状态共同确定，不包含目标位的内容信息，候选键值由有效观测生成，从而把待补位置的结构信息与候选节点的样本内容分开处理。
+其中$Q,K_z,V_z$为可学习仿射映射。缺失位置没有自身观测，其表示只能由样本内其他有效节点估计；查询由目标位置、模态与缺失状态（$s^m_{ik}=2$）共同确定，不包含目标位的内容信息，候选键值由有效观测生成，从而把待补位置的结构信息与候选节点的样本内容分开处理。
 
 设$\ell^n_{ij}$为候选位置所在连续观测段的长度，定义观测连续性先验
 \begin{equation}
@@ -502,12 +502,12 @@ u^n_{ij}=\sigma\left(\alpha_0+\alpha_1\widetilde O^n_{ij}
 该先验利用连续观测段长度描述候选节点的局部可用性：位于较长连续观测段上的候选更贴近缺口的上下文，孤立观测的参考价值较低。对$(n,j)\in\Omega_i$，补全代价及权重为
 \begin{align}
 C^{m,n}_{i,k,j}&=\frac{\|q^m_{ik}-\kappa^n_{ij}\|_2^2}{d}
-+\lambda_t\frac{|k-j|}{50}+\lambda_q(1-u^n_{ij}),\\
++\lambda_t\frac{|k-j|}{K}+\lambda_q(1-u^n_{ij}),\\
 \pi^{m,n}_{i,k,j}&=\frac{\exp(-C^{m,n}_{i,k,j}/\tau)}
 {\sum_{(n',j')\in\Omega_i}\exp(-C^{m,n'}_{i,k,j'}/\tau)},\qquad
 \hat z^m_{ik}=\sum_{(n,j)\in\Omega_i}\pi^{m,n}_{i,k,j}v^n_{ij}.
 \end{align}
-上述代价综合表示距离、位置距离和观测连续性，其中时间项赋予邻近锚点较高的候选优先级，连续性项抑制孤立观测的权重；温度$\tau$控制权重在候选间的集中程度，取值较小时结果接近最近候选，取值较大时趋于候选均值。候选范围覆盖样本内全部可用模态，因而兼顾同模态时序信息与跨模态关联信息。
+上述代价综合表示距离、位置距离和观测连续性，其中位置距离以接口长度$K$归一，时间项赋予邻近锚点较高的候选优先级，连续性项抑制孤立观测的权重；温度$\tau$控制权重在候选间的集中程度，取值较小时结果接近最近候选，取值较大时趋于候选均值。候选范围覆盖样本内全部可用模态，因而兼顾同模态时序信息与跨模态关联信息。
 
 \paragraph{可靠度门控与情感预测}
 对候选代价按补全权重聚合，得到门控所需的三个统计量：
@@ -521,7 +521,7 @@ C_{\min}=\min_{(n,j)\in\Omega_i}C^{m,n}_{i,k,j},\\
 以三者与候选数量占比、目标模态可用比例构造门控输入
 \begin{equation}
 g^m_{ik}=\left[\overline C,\operatorname{Var}_{\pi}(C),C_{\min},
-|\Omega_i|/(3\cdot50),a_i^m,e_m^{\mathrm{mod}}\right],\qquad
+|\Omega_i|/(3K),a_i^m,e_m^{\mathrm{mod}}\right],\qquad
 a_i^m=\frac{\sum_k\widetilde O^m_{ik}}{\sum_kP_{ik}}.
 \end{equation}
 两层感知机输出$\rho^m_{ik}=\sigma(G(g^m_{ik}))$，并与可学习的缺失嵌入$e_m^{\mathrm{miss}}$融合：
@@ -532,7 +532,13 @@ z^{m,f}_{ik}=\widetilde O^m_{ik}z^m_{ik}
 \end{equation}
 门控输入同时刻画补全的质量与可用证据：加权代价均值与最小代价反映候选的匹配程度，加权方差反映候选之间的分歧，候选数量占比与模态可用比例反映可检索证据与模态自身的完整度。其中$e_m^{\mathrm{miss}}$为模态$m$的可学习缺失嵌入，$\rho^m_{ik}\in(0,1)$由两层感知机给出，调节补全表示对融合结果的贡献。观测位置的表示保持不变，缺失位置在补全与缺失嵌入之间按$\rho$加权；当候选集为空时，令$\pi=0,\rho=0$，以缺失嵌入完成回退。
 
-锚点顺序承载情感的时序演变，因此对每个模态独立进行单层双向GRU编码，双向隐状态合计64维；缺失位置经融合后已有表示，递归过程面对的是完整序列。实现中按有效前缀打包序列，避免尾部填充通过反向递归污染内容位置。池化只在$P=1$处计算均值与最大值，使结构化填充不参与统计；拼接三模态池化向量与可用比例$a_i^t,a_i^a,a_i^v$，形成$6d+3=387$维向量，经共享MLP得到$h_i$。双任务输出为
+锚点顺序承载情感的时序演变，因此对每个模态独立进行单层双向GRU编码，记输出隐状态为$h^m_{ik}\in\R^{64}$；缺失位置经融合后已有表示，递归过程面对的是完整序列。实现中按有效前缀打包序列，避免尾部填充通过反向递归污染内容位置。池化只在内容位进行，取内容位的均值与最大值：
+\begin{equation}
+\bar h^m_i=\frac{\sum_k P_{ik}h^m_{ik}}{\sum_k P_{ik}},\qquad
+\check h^m_i=\max_{k:P_{ik}=1}h^m_{ik},\qquad
+h_i=\operatorname{MLP}\left(\left[\bar h^t_i,\check h^t_i,\bar h^a_i,\check h^a_i,\bar h^v_i,\check h^v_i,a^t_i,a^a_i,a^v_i\right]\right),
+\end{equation}
+使结构化填充不参与统计，拼接维度为$6d+3=387$。双任务输出为
 \begin{equation}
 p_i=\operatorname{softmax}(W_ch_i+b_c),\qquad
 \hat y_i=\arg\max_c p_{ic},\qquad
@@ -679,8 +685,6 @@ J=0.5F_{\mathrm{base}}+0.5\left(\frac14\sum_{c\in\mathcal C}F_c\right)
 21 & \quad \textbf{结束轮次循环}，恢复最优学生参数$\theta_S^{*(s)}$。\\
 22 & \textbf{结束种子循环}；返回三组学生参数，用于冻结后的概率与强度集成。\\
 \end{tabularx}\par
-\medskip\noindent
-\textbf{说明：}辅助权重为0时跳过对应损失；某批次没有人工遮挡时，重建与可靠度损失置零。三个种子使用同一数据划分与同一选模协议，仅随机种子不同。候选检索对每个缺失位遍历样本内观测节点，单样本开销为$O(3K|\Omega_i|d)$，在$K=50$与$d=64$下规模可控。附件3不进入本算法的训练和选模过程。
 \end{algorithm}
 
 \begin{figure}[htbp]\centering
