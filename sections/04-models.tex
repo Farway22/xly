@@ -479,7 +479,7 @@ s^m_{ik}=\begin{cases}
 \node[box,below=4mm of p] (c) {样本内观测节点检索补全 + 可靠度门控融合};
 \node[box,below=4mm of c] (g) {逐模态BiGRU + 内容位均值/最大池化 + 可用比例};
 \node[box,below=4mm of g] (h) {共享MLP：三分类概率 $p^S$ 与连续强度 $\hat r^S$};
-\node[box,below=6mm of h,fill=teal!6] (t) {冻结EMT-DLFR教师：原始可用输入 $\to (p^T,\hat r^T)$\\类别平衡标签监督 + 任务蒸馏 + 重建与门控辅助监督};
+\node[box,below=6mm of h] (t) {冻结EMT-DLFR教师：原始可用输入 $\to (p^T,\hat r^T)$\\类别平衡标签监督 + 任务蒸馏 + 重建与门控辅助监督};
 \draw[arr] (x)--(p);\draw[arr] (p)--(c);\draw[arr] (c)--(g);\draw[arr] (g)--(h);
 \draw[arr,dashed] (t)--node[right,font=\footnotesize]{训练期监督}(h);
 \end{tikzpicture}
@@ -985,7 +985,7 @@ I_i(E)=\left[\min_{u\in\mathcal U_i(E)}a_{iu},\ \max_{u\in\mathcal U_i(E)}b_{iu}
 \begin{figure}[H]\centering
 \begin{tikzpicture}[font=\small,
  box/.style={draw=black!65,fill=black!3,text width=8.8cm,align=center,minimum height=8mm,inner sep=4pt},
- branch/.style={draw=black!65,fill=teal!5,text width=4.0cm,align=center,minimum height=12mm,inner sep=4pt},
+ branch/.style={draw=black!65,fill=black!3,text width=4.0cm,align=center,minimum height=12mm,inner sep=4pt},
  arr/.style={-{Latex[length=2mm]},thick}]
 \node[box] (x) {三模态对齐特征：内容掩码、观测掩码、三态输入};
 \node[box,below=4mm of x] (e) {模态投影 + 位置、模态和状态嵌入};
