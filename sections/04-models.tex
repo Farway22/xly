@@ -13,7 +13,7 @@
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/q1_flowchart.pdf}
-\caption{三模态特征提取与时间锚点对齐流程。声学特征与强制对齐共用音频信号；视觉帧采用自身解码时间戳。}
+\caption{三模态特征提取与时间锚点对齐流程}
 \label{q1:fig:flow}
 \end{figure}
 
@@ -57,7 +57,7 @@
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/q1_dataset.png}
-\caption{附件1的原词数、音视频解码跨度差及帧数统计。声明帧数与实解帧数的差额主要与容器编辑列表有关。}
+\caption{附件1的原词数、音视频解码跨度差及帧数统计}
 \label{q1:fig:dataset}
 \end{figure}
 
@@ -213,7 +213,7 @@ d^m_{iu}=\min\left(1,\frac{S^m_i(A_{iu})}{b_{iu}-a_{iu}}\right),
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.92\linewidth]{figures/q1_overlap_example.pdf}
-\caption{交叠池化示意算例。灰色第三帧的视觉特征无效，不进入加权平均；词锚点与有效帧的交叠决定权重，覆盖指标另外记录缺失程度。图中时间和权重为说明公式的构造值，并非附件1样本统计。}
+\caption{交叠池化示意算例}
 \label{q1:fig:overlap}
 \end{figure}
 
@@ -358,7 +358,7 @@ Q^m_{iu}=c_{iu}\,d^m_{iu}\exp(-\gamma_m\vt^m_{iu}),\qquad \gamma_a=\gamma_v=1.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/q1_coverage_summary.pdf}
-\caption{由样本清单和词级明细重算的接口覆盖情况。左图为100条样本的完整词元数，虚线表示48个内容词元上限；6条样本触发截断，共70个词元未进入接口。右图以全部1932个原词为分母，区分完整、部分与零覆盖；完整覆盖按$d\geq1-10^{-6}$判定。}
+\caption{由样本清单和词级明细重算的接口覆盖情况}
 \label{q1:fig:coverage-summary}
 \end{figure}
 
@@ -369,12 +369,12 @@ Q^m_{iu}=c_{iu}\,d^m_{iu}\exp(-\gamma_m\vt^m_{iu}),\qquad \gamma_a=\gamma_v=1.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/q1_fig8_typical_correspondence.png}
-\caption{典型样本的文本、语音与视频对应。五层共用同一秒轴：(a)波形与全部词区间，红窗为否定/转折词；(b)$F_0$（半音，仅浊音帧）与能量包络，虚线为前、后半段中位，点线为切分词时刻；(c)按真实PTS定位的关键帧；(d)25维语音帧特征；(e)16维视觉帧特征。热图的逐维标准化仅用于可视化。}
+\caption{典型样本的文本、语音与视频对应}
 \label{q1:fig:typical}
 \end{figure}
 \begin{table}[htbp]
 \centering\small
-\caption{典型样本的词区间与三模态映射。每个内容词元对应768维文本向量，并继承父词的25维语音向量与16维视觉向量；$F_0$为词区间内浊音帧的p90（半音），能量为同区间Loudness的p90，$^{\dagger}$标记否定/转折词。}
+\caption{典型样本的词区间与三模态映射}
 \label{q1:tab:typical}
 \begin{tabular}{lcccccc}
 \toprule
@@ -399,7 +399,7 @@ Q^m_{iu}=c_{iu}\,d^m_{iu}\exp(-\gamma_m\vt^m_{iu}),\qquad \gamma_a=\gamma_v=1.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.91\linewidth]{figures/q1_fig1_overview_missing.png}
-\caption{局部视觉观测缺失样本。上三幅以秒为横轴，下方质量条带以50位接口索引为横轴，二者通过父词映射和词区间关联。红带表示视觉无效帧（未检出或相邻帧运动不可测），灰色接口位置为非内容位。}
+\caption{局部视觉观测缺失样本}
 \label{q1:fig:missing}
 \end{figure}
 
@@ -409,7 +409,7 @@ Q^m_{iu}=c_{iu}\,d^m_{iu}\exp(-\gamma_m\vt^m_{iu}),\qquad \gamma_a=\gamma_v=1.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/q1_truncation.png}
-\caption{样本\file{-a55Q6RWvTA\$\_\$3}的文本接口截断。上：50位接口的词元归属，右侧红格为截断尾部示意；中：全部原词的时间区间；下：内容掩码。实际有34个尾部词元未形成位置级文本特征，但词级时间记录仍保留。}
+\caption{样本\file{-a55Q6RWvTA\$\_\$3}的文本接口截断}
 \label{q1:fig:truncation}
 \end{figure}
 
@@ -436,7 +436,7 @@ Q^m_{iu}=c_{iu}\,d^m_{iu}\exp(-\gamma_m\vt^m_{iu}),\qquad \gamma_a=\gamma_v=1.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/q1_quality.png}
-\caption{1920个已生成词区间的路径置信度、归一化边界扰动方差和综合质量分布。图(d)的音视频质量相关包含共享的路径置信度因子；零覆盖与退化记录需结合掩码判断。}
+\caption{1920个已生成词区间的路径置信度、归一化边界扰动方差和综合质量分布}
 \label{q1:fig:quality}
 \end{figure}
 
@@ -550,7 +550,7 @@ s^m_{ik}=\begin{cases}
 \draw[arr] (x)--(p);\draw[arr] (p)--(c);\draw[arr] (c)--(g);\draw[arr] (g)--(h);
 \draw[arr,dashed] (t)--node[right,font=\footnotesize]{训练期监督}(h);
 \end{tikzpicture}
-\caption{TSRF-D网络结构与教师--学生监督关系。虚线表示训练阶段的辅助监督。}\label{q2:fig:arch}
+\caption{TSRF-D网络结构与教师--学生监督关系}\label{q2:fig:arch}
 \end{figure}
 
 将三模态特征映射到公共维度$d=64$。设模型实际接收的标准化输入为$\widetilde x^m_{ik}$，则
@@ -744,7 +744,7 @@ J=0.5F_{\mathrm{base}}+0.5\left(\frac14\sum_{c\in\mathcal C}F_c\right)
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figures/q2_v4_training.png}
-\caption{三个学生种子的训练过程。轮次从1开始；左图实线为基础输入验证F1，虚线为四类固定局部缺口平均F1；右图为联合选模指标，圆点标记实际保存轮次。}\label{q2:fig:training}
+\caption{三个学生种子的训练过程}\label{q2:fig:training}
 \end{figure}
 如图\ref{q2:fig:training}所示，三个种子的分类指标在训练初期较快上升，随后进入波动区间。局部缺失条件下的F1整体低于基础输入，反映出信息遮挡带来的预测损失。联合准则在基础性能与缺失性能之间进行权衡，保存其最大值对应的学生参数。
 \FloatBarrier
@@ -845,13 +845,13 @@ J=0.5F_{\mathrm{base}}+0.5\left(\frac14\sum_{c\in\mathcal C}F_c\right)
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figures/q2_v4_missing.png}
-\caption{不同缺失模态与目标区间比例下四项指标的退化曲线。单模态与三模态共缺为实线，双模态组合为浅色虚线，点线为完整输入水平。}\label{q2:fig:metriccurve}
+\caption{不同缺失模态与目标区间比例下四项指标的退化曲线}\label{q2:fig:metriccurve}
 \end{figure}
 
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figures/q2_v4_factors.png}
-\caption{缺失位置、缺口长度与基线比较。(a) 各位置 35 个连续缺失条件的 Macro-F1 分布与组均值；(b) 三模态居中缺口的长度曲线；(c) 三模态共缺下三个模型的 Macro-F1 比较。}\label{q2:fig:factors}
+\caption{缺失位置、缺口长度与基线比较}\label{q2:fig:factors}
 \end{figure}
 
 
@@ -879,7 +879,7 @@ TSRF-D & 648 & 0.6007 & 0.6614\\
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figures/q2_v4_errors.png}
-\caption{受控缺口下的逐样本错误转移。(a) 三模态居中缺口的四类样本占比与翻转样本数；(b) 缺口长度下的翻转与修复样本数，顶部标注实际观测删除率；(c) 各模态组合的翻转率随实际删除率的变化。}\label{q2:fig:errors}
+\caption{受控缺口下的逐样本错误转移}\label{q2:fig:errors}
 \end{figure}
 
 
@@ -887,7 +887,7 @@ TSRF-D & 648 & 0.6007 & 0.6614\\
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figures/q2_v4_validation.png}
-\caption{验证集类别混淆与强度回归结果。}\label{q2:fig:valid}
+\caption{验证集类别混淆与强度回归结果}\label{q2:fig:valid}
 \end{figure}
 
 
@@ -901,7 +901,7 @@ TSRF-D & 648 & 0.6007 & 0.6614\\
 LMF、MulT与内部基线不使用教师监督，TSRF-D的训练还包含EMT-DLFR教师的软监督，因此本节比较完整方法的预测表现，训练计算成本应计入教师学习。
 
 \begin{table}[htbp]\centering\small
-\caption{测试集统一口径的基线比较。基础输入保留自然缺失，局部指标对105种连续缺失条件等权平均；各模型均为三个种子的概率与强度集成。}\label{q2:tab:baseline}
+\caption{测试集统一口径的基线比较}\label{q2:tab:baseline}
 \begin{tabular}{lrrrrrr}\toprule
 模型 & 基础Acc & 基础F1 & 基础MAE & 基础$r$ & 局部F1 & 局部MAE\\\midrule
 仅文本 & 0.6410 & 0.6192 & 0.6396 & 0.6613 & 0.6028 & 0.6700\\
@@ -923,14 +923,14 @@ TSRF-D & 0.6437 & 0.6189 & 0.6221 & 0.6824 & 0.6066 & 0.6492\\
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figures/q2_v5_baselines.png}
-\caption{十类模型在测试集上的比较。(a) 基础输入与105种连续局部缺失条件下的Macro-F1；(b) 局部条件下本文模型相对各基线的配对差异及95\%区间，红色表示经Holm校正后达到5\%显著性水平。}\label{q2:fig:baselines}
+\caption{十类模型在测试集上的比较}\label{q2:fig:baselines}
 \end{figure}
 
 \begin{samepage}
 为量化差异的不确定性，将测试集按来源视频分为381组，进行2000次配对bootstrap；同一视频的所有片段及全部缺失条件共用重采样权重。表中差值为本文模型减去基线，F1正值和MAE负值分别表示改善；对九类基线的局部F1与局部MAE共18项比较采用Holm校正。区间反映固定模型的评价样本不确定性，种子间波动见表\ref{q2:tab:seeds}。\par\end{samepage}
 
 \begin{table}[htbp]\centering\small
-\caption{测试集上本文模型相对各基线的局部配对差异及95\%区间。局部差异对105种连续缺失条件等权平均，按来源视频重采样2000次。}\label{q2:tab:paired}
+\caption{测试集上本文模型相对各基线的局部配对差异及95\%区间}\label{q2:tab:paired}
 \begin{tabular}{llrrr}\toprule
 基线 & 指标 & 差值 & 95\%区间 & 校正$p$\\\midrule
 仅文本 & 局部F1 & +0.0038 & [-0.0166, +0.0232] & 1.000\\
@@ -961,7 +961,7 @@ MulT & 局部MAE & -0.0414 & [-0.0598, -0.0235] & 0.018\\
 经多重比较校正，相对模态丢弃的局部F1改善以及相对均值填充、三态嵌入、LMF、MulT的局部MAE改善得到统计支持。分类与回归反映不同预测目标，因而分别依据对应差异和区间评价方法效果。
 
 \begin{table}[htbp]\centering\small
-\caption{局部条件下的随机种子波动。单种子指标为该种子在105种连续缺失条件上的平均Macro-F1。}\label{q2:tab:seeds}
+\caption{局部条件下的随机种子波动}\label{q2:tab:seeds}
 \begin{tabular}{lrr}\toprule
 模型 & 单种子局部F1均值 & 种子标准差\\\midrule
 仅文本 & 0.5951 & 0.0036\\
@@ -986,7 +986,7 @@ TSRF-D的单种子局部F1波动为0.0038，在十类模型中最小；零填充
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figures/q2_v4_a3.png}
-\caption{附件3全量样本的分类概率与强度预测。误差棒为三个种子的强度标准差。}\label{q2:fig:a3}
+\caption{附件3全量样本的分类概率与强度预测}\label{q2:fig:a3}
 \end{figure}
 
 
@@ -1083,7 +1083,7 @@ I_i(E)=\left[\min_{u\in\mathcal U_i(E)}a_{iu},\ \max_{u\in\mathcal U_i(E)}b_{iu}
 \draw[arr] (x)--(e);\draw[arr] (e)--(g);\draw[arr] (g)--(h);
 \draw[arr] (h)--(m);\draw[arr] (h)--(b);\draw[arr] (m)--(o1);\draw[arr] (b)--(o2);
 \end{tikzpicture}
-\caption{问题三ICF-Shapley预测器与解释层结构。两类干预均调用同一冻结预测器，分别产生模态级和片段级解释。}\label{q3:fig:arch}
+\caption{问题三ICF-Shapley预测器与解释层结构}\label{q3:fig:arch}
 \end{figure}
 
 \FloatBarrier
@@ -1196,7 +1196,7 @@ $\Delta_i^m(E)>0$表示该片段支持参考类别，小于零表示抑制参考
 \bottomrule\end{tabular}\end{table}
 验证集负向、中性、正向F1依次为0.6430、0.5114与0.6966，类别间的差异集中在中间类别，中性边界的刻画是提升分类表现的关键环节。图\ref{q3:fig:perf}给出类别间的混淆结构与各类别指标。
 \begin{figure}[H]\centering\includegraphics[width=.92\linewidth]{figures/q3_performance.png}
-\caption{验证集混淆矩阵与分类指标。}\label{q3:fig:perf}\end{figure}
+\caption{验证集混淆矩阵与分类指标}\label{q3:fig:perf}\end{figure}
 
 表\ref{q3:tab:ablation}进一步比较子集训练、网络容量及一致性约束的影响。评价同时考虑预测指标、局部解释响应与种子间主模态一致性，以观察不同方案的收益与代价。
 
@@ -1223,7 +1223,7 @@ V3：单调正则 & 0.559 & 0.6192 & 0.6011 & 0.124 & 75.7\% \\
 空集价值为-0.687，全模态价值为0.542，单模态联盟中文本为0.382、语音为-0.651、视觉为-0.637；三模态平均Shapley贡献为文本+1.105、语音+0.068、视觉+0.056，96条子集中分类主参考模态为文本86条、语音3条、视觉7条。
 图\ref{q3:fig:coal}显示，文本的平均Shapley贡献为$+1.105$，构成预测的主导信息来源；语音与视觉分别贡献$+0.068$与$+0.056$，在三模态协同中提供补充信息，主参考模态分布与贡献排序一致。样本层的正负贡献与主参考模态另行保留，以刻画个体差异。效率性残差不超过$8.9\times10^{-16}$，满足Shapley效率性公理。
 \begin{figure}[H]\centering\includegraphics[width=.94\linewidth]{figures/q3_coalition_value.png}
-\caption{模态联盟的平均分类价值与三模态平均Shapley贡献。}\label{q3:fig:coal}\end{figure}
+\caption{模态联盟的平均分类价值与三模态平均Shapley贡献}\label{q3:fig:coal}\end{figure}
 
 \FloatBarrier
 \paragraph{局部证据与解释检验}
@@ -1243,7 +1243,7 @@ V3：单调正则 & 0.559 & 0.6192 & 0.6011 & 0.124 & 75.7\% \\
 图\ref{q3:fig:faith}右图同时比较总体一致率与Cohen $\kappa$。在该确认子集上，B1与B2的主模态一致率为90.63\%，$\kappa=0.4364$；B1与B3的一致率为92.71\%，$\kappa=-0.0136$。因此，局部片段删除具有稳定的平均响应优势，而主模态归因仍依赖解释基线，尤其是少数非文本主导样本。
 
 \begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/q3_confirmation.png}
-\caption{冻结测试子集上的分类与强度删除验证及解释基线敏感性。左、中图采用各任务自己的主要模态与片段排序；横轴为目标块比例。}\label{q3:fig:faith}\end{figure}
+\caption{冻结测试子集上的分类与强度删除验证及解释基线敏感性}\label{q3:fig:faith}\end{figure}
 
 \FloatBarrier
 \paragraph{解释稳定性}
@@ -1271,7 +1271,7 @@ V3：单调正则 & 0.559 & 0.6192 & 0.6011 & 0.124 & 75.7\% \\
 \paragraph{附件4全量结果}
 附件4全部20条样本的预测分布为中性7条、负向7条、正向6条，分类主参考模态为文本19条、视觉1条。图\ref{q3:fig:a4}从强度分布、分类模态份额和种子间波动三个角度展示全量结果。中图多数样本的文本份额较高，与文本主导的总体归因一致；第8条以视觉为主，体现个体差异。20条样本的强度三种子标准差均值为0.105，最大为0.410（附件4\_10）。第13条的视觉分支不可用，其视觉份额标记为NA，其余两个模态照常给出贡献；4-04与4-19的预测极性与强度方向不一致，属于独立双头结构下的输出分歧，两个任务分别保留各自的预测与贡献分解。跨模态核查中，17条样本的全部可用模态最高分证据均指向预测类别；4-06、4-14与4-16各有一个模态的最高分证据方向相反，反向项均为视觉分支的最高分块，响应幅度在$-0.069$至$-0.012$之间，而三条样本的文本主证据幅度分别为0.404、0.467和2.661，视觉分歧项不足其两成，判别主体仍落在文本证据上。按与验证集相同的10\%、20\%、30\%三档删除协议，20条样本上高分块相对随机块的平均概率下降差为0.1316，95\%区间为[0.0857,0.1858]，逐块响应在无标签样本上同样稳定区分证据块与随机块。
 \begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/q3_a4_overview.png}
-\caption{附件4全部20条样本的情感预测、模态作用份额与种子间波动。}\label{q3:fig:a4}\end{figure}
+\caption{附件4全部20条样本的情感预测、模态作用份额与种子间波动}\label{q3:fig:a4}\end{figure}
 表\ref{q3:tab:all20}列出逐条预测及作用份额，便于与图\ref{q3:fig:a4}核对。其中NA表示输入特征不可用，不能解释为该模态贡献为零；分类极性与连续强度分别来自两个输出头。
 
 \begingroup\small
@@ -1316,7 +1316,7 @@ V3：单调正则 & 0.559 & 0.6192 & 0.6011 & 0.124 & 75.7\% \\
 \paragraph{典型样本与证据回映}
 解释卡把预测结论、模态份额、证据词时间与原始素材组织在同一视图中，用于检验模型响应与可观察线索的对应关系。附件4第12条的预测为负向（最大类概率0.76，强度$-0.804$），主要参考模态为文本（份额0.897）：原文前段为\textit{previously had good credit}，转折词\textit{but}（3.88\,s）之后转入信用下滑的负面叙述，最高分证据片段为\textit{sag,}（9.94--10.30\,s），同时是语音的最高分证据块，两个模态的证据落在同一词上。沿用问题一的韵律度量，\textit{but}处音高相对前段抬高2.3半音、能量抬升0.88，证据词处音高抬高2.3半音、能量抬升0.52，构成样本内两处局部韵律突起点；卡片中的全段韵律轨迹给出能量与音高随时间的走向。图\ref{q3:fig:cardturn}中黄底标记主要模态的最高分证据词，蓝底标记其他模态的最高分证据词；三个可用模态的最高分证据方向一致，未见跨模态冲突。跨模态分歧样本、视觉主模态样本与缺模态降级样本的完整解释卡及全部20条索引随支撑材料提交。
 \begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/q3_card_12.png}
-\caption{附件4第12条（转折样本）解释卡。自上而下依次为原始关键帧、预测与模态份额、分类概率、原文证据高亮、全段韵律轨迹、语音证据波形与逐块删除响应；份额由绝对Shapley贡献归一化得到，响应为删除前后参考类别的log-odds差，正值表示支持。}\label{q3:fig:cardturn}\end{figure}
+\caption{附件4第12条（转折样本）解释卡}\label{q3:fig:cardturn}\end{figure}
 20条样本的重新分词序列均与官方词元一致，482个原词中478个获得CTC时间区间；该回映与问题一共用同一套对齐实现，词表构建与CTC强制对齐直接调用问题一的模块，问题一建立的词元—锚点—时间对应关系由此成为后两问共享的时序基础。新增双任务证据共120条，其中118条可用记录均完成时间回映并导出音频与关键帧；其余2条为第13条样本的视觉特征不可用，在分类与强度任务中分别标记NA。每条记录保存原素材哈希、词元锚点、作用方向、时间区间及真实帧PTS，构成从模型响应到原素材的可追溯链条。
 
 本模型把情感预测分解为可复核的模态贡献与局部响应，并通过词级时间区间连接到原始素材：Shapley值度量指定模型与基线下的作用差异，删除实验检验局部证据与预测响应的一致性。两项分析在同一预测器上完成，因此解释结论可直接对应该模型的决策过程。
