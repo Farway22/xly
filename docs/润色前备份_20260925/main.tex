@@ -1,0 +1,56 @@
+% 主文件。导入 ZIP 后可直接 Recompile，无需手动更改编译器。
+\documentclass{gmcmthesis}
+\usepackage{placeins}
+\usepackage{tikz,float}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\floatstyle{ruled}
+\newfloat{algorithm}{htbp}{loa}
+\floatname{algorithm}{算法}
+\providecommand{\sg}{\operatorname{sg}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\providecommand{\R}{\mathbb R}
+\providecommand{\ind}{\mathbf 1}
+\providecommand{\vt}{\widetilde V}
+\providecommand{\file}[1]{\texttt{\small #1}}
+\newcommand{\VideoDuration}{787.985}
+\newcommand{\AudioDuration}{777.106}
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{3}
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.80}
+\ctexset{paragraph={format=\songti\bfseries\normalsize,number={（\arabic{paragraph}）},indent=2em,aftername=\hspace{0.5em},beforeskip=4pt,afterskip=2pt,runin=false}}
+
+
+% 题目：三号黑体。加长下划线后，文字仍居中，因而向右移动。
+\title{多模态情感的时序对齐、鲁棒预测与可解释建模}
+\setlength{\papertitleleft}{148.1bp} % 下划线左端；增大则整条线和文字一起右移
+\setlength{\papertitlewidth}{300bp}  % 下划线长度；原模板为245.03bp
+
+% 封面填写区；留空时与附件3的空白封面保持一致。
+\schoolname{}
+\baominghao{}
+\membera{}
+\memberb{}
+\memberc{}
+
+\begin{document}
+\makecover
+\maketitle
+\begin{abstract}
+  \input{sections/00-abstract}
+\end{abstract}
+
+% 附件2要求摘要后下一页开始正文，因此默认不插入目录。
+% 若提交方另有目录要求，可在此启用 \maketoc。
+\startbody
+\input{sections/01-problem}
+\input{sections/02-assumptions}
+\input{sections/03-notations}
+\input{sections/04-models}
+\input{sections/05-evaluation}
+\input{sections/06-conclusion}
+\input{sections/07-references}
+\input{sections/08-appendix}
+\end{document}

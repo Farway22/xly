@@ -1,0 +1,175 @@
+\section{问题重述}
+\subsection{问题背景}
+情感状态经由语言内容、语音韵律与面部运动三条通道同时表达：词义决定评价的正负方向，语调、语速与能量反映强调、迟疑与情绪唤醒，面部关键点的运动则补充词面之外的态度信息。三者的物理载体并不相同，分别表现为离散词元序列、等间隔采样的声学帧与带时间戳的视频帧，在采样频率、特征维度与时间尺度上存在明显差异。
+
+真实录制条件放大了这种差异：自动转写可能识别失败，音视频轨道的起止时刻与有效时长并不一致，部分视频帧中人脸检出失败，个别模态还会在局部连续时段内整体不可用。若按序号直接拼接三路特征，同一位置上的语义、语音与视觉信息可能对应不同时刻；若直接剔除不完整样本，则会损失本就有限的建模数据。因此，多模态情感预测需要先建立从原始素材到时序特征的对应关系，再在证据不完整时稳定输出情感极性与强度，并说明判断所依据的模态与局部片段，使结果可追溯、可复核。
+
+\subsection{问题描述}
+本文以赛题提供的CMU-MOSEI系列数据为唯一数据来源，依次完成三项建模任务。
+
+\textbf{问题一（多模态情感特征提取与时序对齐）：}附件1提供筛选自CMU-MOSEI的100条英文原始视频及其转写与标注表，视频时长介于2.648\,s与34.567\,s之间。要求以原始素材为输入，建立文本、语音、视觉三模态情感特征提取与时序对齐的数学模型，明确原始样本的处理流程、各模态情感特征的定义与提取方法、跨模态时序对齐的规则与实现逻辑，特征提取的基础处理可使用开源工具或预训练模型。自生成的特征文件需满足三项要求：一是样本覆盖完整性，样本编号、模态文件与输出特征一一对应；二是时序组织可核验性，序列位置、有效长度、填充规则及其与原始素材的对应关系均有记录；三是方法合理性与可复现性，提取工具、关键参数、处理日志与复现说明齐备。同时以表格汇总全部100条样本的样本编号、模态类型、原始有效时长、特征维度与对齐粒度，选取典型样本展示文本片段、语音时段、视频帧段与三类特征的对应关系，并按统一格式保存全部特征。
+
+\textbf{问题二（模态局部缺失条件下的情感预测）：}附件2给出官方对齐与非对齐两种版本的三模态标准化特征及标签，各4850条样本并按训练、验证、测试划分，其中对齐版文本、语音、视觉矩阵形状分别为$(N,50,768)$、$(N,50,74)$与$(N,50,35)$；附件3为无标签的模态局部缺失专项测试集，缺失表现为一个或多个模态中出现特征值全为零的随机连续区间，而非整个模态完全不存在。要求建立鲁棒情感预测模型，在局部模态信息不完整的条件下稳定输出情感极性与强度，分析缺失模态类型、缺失位置与缺失时长对预测性能的影响规律。训练集用于参数学习，验证集用于选择模型结构、超参数与决策阈值，附件3仅用于最终推理。分类任务采用Accuracy与F1评价，回归任务采用MAE与Pearson相关系数评价，预测结果按指定CSV格式提交。
+
+\textbf{问题三（可解释性情感预测）：}附件4为无标签的真实场景视频及其对应三模态特征，特征字段、张量维度与时序组织方式与附件2一致，且三模态信息完整。要求在输出情感极性与强度的同时，以可量化、可复核的方式说明本次判断主要依据了哪些输入信息：给出不同模态在当前样本中的作用差异、对预测起主要作用的主要参考模态，以及各模态中与判断密切相关的局部片段，关键证据需可对应至原始文本片段、语音时段或视觉关键帧。附件4仅用于最终推理预测，预测与解释结果按指定CSV格式提交。问题二与问题三均以附件2为训练与验证数据，各自独立建模。
+
+\subsection{研究综述}
+多模态情感预测的研究沿两条主线展开~\cite{ref:mm}：一是跨模态表示与融合，二是缺失条件下的鲁棒建模与决策解释；赛题所用的CMU-MOSEI即为面向真实场景的多模态情感基准数据~\cite{ref:mosei}。
+
+在特征表示与融合方面，早期工作以张量外积显式建模模态间的高阶交互~\cite{ref:tfn}，随后注意力机制被用于自动学习模态间的信息权重与跨模态对齐~\cite{ref:mtfn}；预训练语言模型~\cite{ref:bert}与自监督语音模型~\cite{ref:wav2vec2}分别提供了语义与声学层面的高质量表示，使不同模态的特征在可比空间内参与融合。时间对齐方面，连接主义时序分类（CTC）为无切分序列与词序列之间提供了可微分的对齐路径~\cite{ref:ctc}，使声学帧到词级单元的时间归属可由模型输出直接推断，为跨模态时间对应提供了可核验的中间变量。
+
+在缺失鲁棒性与决策解释方面，知识蒸馏通过教师--学生结构把完整输入下的判别能力迁移到受损输入~\cite{ref:kd}，为局部缺失场景提供了一条不依赖插补值的训练路径；可解释性方面，Shapley值为量化各模态对预测的贡献提供了具有公理化保证的博弈论工具~\cite{ref:shapley}，局部代理解释~\cite{ref:lime}与统一的加性归因框架~\cite{ref:shap}进一步把贡献分解推进到输入片段级别。
+
+对本题而言，上述方法留下三点需要专门处理的特殊性：其一，赛题要求以原始素材为输入自主完成特征提取与词级时间对齐，通用融合模型并不提供可直接核验的时间对应记录；其二，附件3的缺失形态是局部连续区间不可用，常见缺失填补方法多针对随机丢失，缺少对连续缺口内候选证据塌缩的显式建模；其三，解释需在同一预测器上同时给出模态级作用程度与片段级证据，并要求证据可回映至原始视频，而通用解释方法通常只提供特征层面的归因。本文据此依次展开三项任务，并在每问中给出可核验的处理记录与对照实验。
+
+\section{问题分析}
+\subsection{总体思路}
+三项任务构成从时间组织到鲁棒预测、再到决策解释的递进链条。问题一处理原始素材与时间基准：三模态采样粒度不同，需先以词为公共时间锚点建立可核验的对应关系，输出内容位置、观测掩码与词级时间区间。问题二处理证据不完整：在附件2的官方对齐特征上区分填充、观测与局部缺失三种状态，使预测在连续缺口存在时仍然可用。问题三处理决策可追溯：在附件2上独立训练预测器，通过固定参考类别的模态联盟分解与输入片段删除，给出主要参考模态、模态作用程度与可回映到原始素材的关键证据。
+
+三问的数据输入、模型节点与输出关系如图\ref{prob:fig:framework}所示。
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small,
+  pnl/.style={rounded corners=6pt,dashed,draw=#1!60!black,fill=#1!4},
+  hd/.style={rounded corners=3pt,fill=#1!28,inner sep=3pt,font=\scriptsize\bfseries,text=#1!45!black},
+  stp/.style={rounded corners=3pt,draw=#1!55,fill=#1!12,align=center,inner sep=2.5pt,
+    font=\scriptsize,text width=3.50cm,minimum height=0.80cm,text=black!85},
+  inp/.style={rounded corners=3pt,draw=#1!55,fill=#1!18,align=center,inner sep=2.5pt,
+    font=\scriptsize,text width=3.50cm,minimum height=0.80cm,text=black!85},
+  oup/.style={rounded corners=3pt,draw=#1!65,fill=#1!30,align=center,inner sep=2.5pt,
+    font=\scriptsize,text width=3.50cm,minimum height=0.80cm,text=black!85},
+  dsh/.style={rounded corners=3pt,dashed,draw=#1!75,fill=#1!7,align=center,inner sep=2.5pt,
+    font=\scriptsize,text width=3.50cm,minimum height=0.80cm,text=black!85},
+  sml/.style={rounded corners=2pt,draw=#1!50,fill=#1!10,align=center,inner sep=2pt,
+    font=\tiny,text width=1.02cm,minimum height=0.80cm,text=black!85},
+  note/.style={font=\scriptsize,text=black!60},
+  tinyn/.style={font=\tiny,text=black!55}]
+
+% ================= 上层：数据来源 =================
+\draw[rounded corners=6pt,dashed,draw=black!30,fill=black!3]
+  (0.10,10.45)--(16.42,10.45)--(16.42,11.60)--(0.10,11.60)--cycle;
+\node[anchor=west,font=\footnotesize\bfseries,text=black!75] at (0.38,11.02) {数据来源};
+
+\fill[black!10,rounded corners=3pt] (2.14,10.66)--(5.49,10.66)--(5.49,11.46)--(2.14,11.46)--cycle;
+\draw[rounded corners=3pt,draw=black!25,fill=white] (2.10,10.70)--(5.45,10.70)--(5.45,11.50)--(2.10,11.50)--cycle;
+\node[rounded corners=2pt,fill=black!55,text=white,font=\tiny\bfseries,inner sep=2pt] at (2.32,11.10) {1};
+\node[anchor=west,font=\scriptsize\bfseries,text=black!80] at (2.54,11.19) {原始视频与官方转写};
+\node[anchor=west,font=\tiny,text=black!55] at (2.54,10.96) {附件1 · 100 条样本};
+
+\fill[black!10,rounded corners=3pt] (5.64,10.66)--(8.99,10.66)--(8.99,11.46)--(5.64,11.46)--cycle;
+\draw[rounded corners=3pt,draw=black!25,fill=white] (5.60,10.70)--(8.95,10.70)--(8.95,11.50)--(5.60,11.50)--cycle;
+\node[rounded corners=2pt,fill=black!55,text=white,font=\tiny\bfseries,inner sep=2pt] at (5.82,11.10) {2};
+\node[anchor=west,font=\scriptsize\bfseries,text=black!80] at (6.04,11.19) {官方对齐特征与标签};
+\node[anchor=west,font=\tiny,text=black!55] at (6.04,10.96) {附件2 · 训练 / 验证};
+
+\fill[black!10,rounded corners=3pt] (9.14,10.66)--(12.49,10.66)--(12.49,11.46)--(9.14,11.46)--cycle;
+\draw[rounded corners=3pt,draw=black!25,fill=white] (9.10,10.70)--(12.45,10.70)--(12.45,11.50)--(9.10,11.50)--cycle;
+\node[rounded corners=2pt,fill=black!55,text=white,font=\tiny\bfseries,inner sep=2pt] at (9.32,11.10) {3};
+\node[anchor=west,font=\scriptsize\bfseries,text=black!80] at (9.54,11.19) {缺失专项测试样本};
+\node[anchor=west,font=\tiny,text=black!55] at (9.54,10.96) {附件3 · 30 条，无标注};
+
+\fill[black!10,rounded corners=3pt] (12.64,10.66)--(15.99,10.66)--(15.99,11.46)--(12.64,11.46)--cycle;
+\draw[rounded corners=3pt,draw=black!25,fill=white] (12.60,10.70)--(15.95,10.70)--(15.95,11.50)--(12.60,11.50)--cycle;
+\node[rounded corners=2pt,fill=black!55,text=white,font=\tiny\bfseries,inner sep=2pt] at (12.82,11.10) {4};
+\node[anchor=west,font=\scriptsize\bfseries,text=black!80] at (13.04,11.19) {解释专项测试样本};
+\node[anchor=west,font=\tiny,text=black!55] at (13.04,10.96) {附件4 · 20 条，无标注};
+
+\draw[-{Latex[length=2mm]},thick,blue!60!black] (2.42,10.43)--(2.42,9.99);
+\draw[-{Latex[length=2mm]},thick,orange!75!black] (8.26,10.43)--(8.26,9.99);
+\draw[-{Latex[length=2mm]},thick,green!45!black] (14.10,10.43)--(14.10,9.99);
+
+% ================= 左列：问题一 =================
+\draw[pnl=blue] (0.10,1.70)--(4.74,1.70)--(4.74,9.95)--(0.10,9.95)--cycle;
+\node[hd=blue,anchor=west] at (0.38,9.70) {问题一：特征提取与时序对齐};
+\node[inp=blue] (a1) at (2.42,9.00) {输入：附件1\\原始视频 + 官方转写};
+\node[sml=blue] (t1) at (1.17,7.88) {文本特征};
+\node[sml=blue] (t2) at (2.42,7.88) {语音特征};
+\node[sml=blue] (t3) at (3.67,7.88) {视觉特征};
+\node[stp=blue] (a3) at (2.42,6.76) {CTC 词级强制对齐\\{\scriptsize\textcolor{black!55}{词区间 $[\tau_s,\tau_e]$}}};
+\node[stp=blue] (a4) at (2.42,5.64) {子词映射\\{\scriptsize\textcolor{black!55}{子词 $u_k\rightarrow$ 父词}}};
+\node[stp=blue] (a5) at (2.42,4.52) {交叠池化\\{\scriptsize\textcolor{black!55}{$\sum_k w_k x_k$}}};
+\node[stp=blue] (a6) at (2.42,3.40) {质量评价\\{\scriptsize\textcolor{black!55}{覆盖率 $d$ + 边界扰动 $Q$}}};
+\node[oup=blue] (a7) at (2.42,2.28) {输出：50 位自提特征接口\\{\scriptsize\textcolor{black!55}{维度 768 / 25 / 16}}};
+\draw[thick,blue!60!black] (2.42,8.60)--(2.42,8.38);
+\draw[thick,blue!60!black] (1.17,8.38)--(3.67,8.38);
+\draw[-{Latex[length=1.8mm]},thick,blue!60!black] (1.17,8.38)--(1.17,8.28);
+\draw[-{Latex[length=1.8mm]},thick,blue!60!black] (2.42,8.38)--(2.42,8.28);
+\draw[-{Latex[length=1.8mm]},thick,blue!60!black] (3.67,8.38)--(3.67,8.28);
+\draw[thick,blue!60!black] (1.17,7.48)--(1.17,7.30);
+\draw[thick,blue!60!black] (2.42,7.48)--(2.42,7.30);
+\draw[thick,blue!60!black] (3.67,7.48)--(3.67,7.30);
+\draw[thick,blue!60!black] (1.17,7.30)--(3.67,7.30);
+\draw[-{Latex[length=1.8mm]},thick,blue!60!black] (2.42,7.30)--(2.42,7.16);
+\draw[-{Latex[length=1.8mm]},thick,blue!60!black] (a3)--(a4);
+\draw[-{Latex[length=1.8mm]},thick,blue!60!black] (a4)--(a5);
+\draw[-{Latex[length=1.8mm]},thick,blue!60!black] (a5)--(a6);
+\draw[-{Latex[length=1.8mm]},thick,blue!60!black] (a6)--(a7);
+
+% ================= 中列：问题二 =================
+\draw[pnl=orange] (5.94,1.70)--(10.58,1.70)--(10.58,9.95)--(5.94,9.95)--cycle;
+\node[hd=orange,anchor=west] at (6.22,9.70) {问题二：局部缺失鲁棒预测};
+\node[inp=orange] (b1) at (8.26,9.00) {输入：附件2（训练 / 验证）\\附件3（专项推理）\\{\scriptsize\textcolor{black!55}{官方对齐特征 768 / 74 / 35}}};
+\node[stp=orange] (b2) at (8.26,7.88) {三态掩码\\{\scriptsize\textcolor{black!55}{$s=0,1,2$：填充 / 观测 / 缺失}}};
+\node[stp=orange] (b3) at (8.26,6.76) {观测节点补全\\{\scriptsize\textcolor{black!55}{同模态 + 跨模态候选，$C,\pi$}}};
+\node[stp=orange] (b4) at (8.26,5.64) {可靠度门控融合\\{\scriptsize\textcolor{black!55}{$\rho$}}};
+\node[stp=orange] (b5) at (8.26,4.52) {双向时序编码\\{\scriptsize\textcolor{black!55}{BiGRU}}};
+\node[stp=orange] (b6) at (8.26,3.40) {双头预测\\{\scriptsize\textcolor{black!55}{极性分类 + 强度回归}}};
+\node[dsh=orange] (b7) at (8.26,2.28) {训练期：教师—学生蒸馏\\{\scriptsize\textcolor{black!55}{完整输入教师（冻结）}}};
+\draw[-{Latex[length=1.8mm]},thick,orange!75!black] (b1)--(b2);
+\draw[-{Latex[length=1.8mm]},thick,orange!75!black] (b2)--(b3);
+\draw[-{Latex[length=1.8mm]},thick,orange!75!black] (b3)--(b4);
+\draw[-{Latex[length=1.8mm]},thick,orange!75!black] (b4)--(b5);
+\draw[-{Latex[length=1.8mm]},thick,orange!75!black] (b5)--(b6);
+\draw[-{Latex[length=1.8mm]},thick,orange!75!black] (b6)--(b7);
+\draw[-{Latex[length=1.8mm]},thick,dashed,orange!80!black] (10.12,2.28)--(10.36,2.28)--(10.36,3.40)--(10.12,3.40);
+
+% ================= 右列：问题三 =================
+\draw[pnl=green] (11.78,1.70)--(16.42,1.70)--(16.42,9.95)--(11.78,9.95)--cycle;
+\node[hd=green,anchor=west] at (12.06,9.70) {问题三：可解释预测与证据定位};
+\node[inp=green] (c1) at (14.10,9.00) {输入：附件2（训练）\\附件4（专项推理）\\{\scriptsize\textcolor{black!55}{官方对齐特征 768 / 74 / 35}}};
+\node[stp=green] (c2) at (14.10,7.88) {子集感知编码\\{\scriptsize\textcolor{black!55}{模态子集打包 + BiGRU}}};
+\node[stp=green] (c3) at (14.10,6.76) {模态贡献分解\\{\scriptsize\textcolor{black!55}{固定参考类别，模态联盟枚举}}};
+\node[stp=green] (c4) at (14.10,5.64) {局部证据定位\\{\scriptsize\textcolor{black!55}{锚点块删除 $\Delta p$}}};
+\node[stp=green] (c5) at (14.10,4.52) {时间回映\\{\scriptsize\textcolor{black!55}{$(\tau_s,\tau_e)$ 对应原素材}}};
+\node[oup=green] (c6) at (14.10,3.40) {输出：极性、强度、主模态\\{\scriptsize\textcolor{black!55}{与证据片段}}};
+\node[dsh=green] (c7) at (14.10,2.28) {校验：累计删除对照\\{\scriptsize\textcolor{black!55}{多基线比较 + 多种子稳定性}}};
+\draw[-{Latex[length=1.8mm]},thick,green!45!black] (c1)--(c2);
+\draw[-{Latex[length=1.8mm]},thick,green!45!black] (c2)--(c3);
+\draw[-{Latex[length=1.8mm]},thick,green!45!black] (c3)--(c4);
+\draw[-{Latex[length=1.8mm]},thick,green!45!black] (c4)--(c5);
+\draw[-{Latex[length=1.8mm]},thick,green!45!black] (c5)--(c6);
+\draw[-{Latex[length=1.8mm]},thick,green!45!black] (c6)--(c7);
+\draw[-{Latex[length=1.8mm]},thick,dashed,green!45!black] (15.96,2.28)--(16.20,2.28)--(16.20,5.64)--(15.96,5.64);
+
+% ================= 三问间方法联系（带标注） =================
+\draw[-{Latex[length=1.8mm]},thick,dashed,black!55] (4.76,6.76)--(5.92,6.76);
+\node[tinyn,fill=white,inner sep=1pt] at (5.34,6.62) {时序口径沿用};
+\draw[-{Latex[length=1.8mm]},thick,dashed,black!55] (10.60,5.64)--(11.76,5.64);
+\node[tinyn,fill=white,inner sep=1pt] at (11.18,5.50) {同源附件2};
+
+% ================= 图例 =================
+\draw[-{Latex[length=2mm]},thick,black!60] (0.15,1.28)--(0.75,1.28);
+\node[tinyn,anchor=west] at (0.82,1.28) {处理流程};
+\draw[-{Latex[length=2mm]},thick,dashed,black!55] (2.05,1.28)--(2.65,1.28);
+\node[tinyn,anchor=west] at (2.72,1.28) {三问间方法联系};
+\draw[-{Latex[length=2mm]},thick,dashed,orange!80!black] (4.60,1.28)--(5.20,1.28);
+\node[tinyn,anchor=west] at (5.27,1.28) {训练期蒸馏监督};
+\draw[rounded corners=2pt,dashed,draw=black!45,fill=black!4] (7.35,1.14)--(7.95,1.14)--(7.95,1.42)--(7.35,1.42)--cycle;
+\node[tinyn,anchor=west] at (8.02,1.28) {虚线框：训练期 / 校验环节};
+\node[tinyn,anchor=west] at (11.10,1.28) {问题一提供时序口径与回映方法；问题二、三同源附件2、独立建模};
+\end{tikzpicture}}
+\caption{本文总体研究思路图。上层汇总三问使用的四类原始数据；下层三个并列面板分别给出特征提取与时序对齐、局部缺失鲁棒预测、可解释预测与证据定位的处理流程与输出。实线箭头为处理流程，虚线框为训练期与校验环节；跨面板虚线箭头标注三问间共享的时序口径与同源数据关系，问题二、三同源附件2但独立建模。}
+\label{prob:fig:framework}
+\end{figure}
+图中上层汇总三问使用的四类原始数据：附件1的100条视频与官方转写、附件2的官方对齐特征与标签、附件3与附件4的专项测试样本；下层三个面板分别对应三问的处理流程与输出。问题一由文本、语音、视觉三路分别形成模态特征，经CTC词级强制对齐确定词区间，依次完成子词映射、交叠池化与质量评价，输出50位定长接口。问题二在三态掩码上完成观测节点补全与可靠度门控融合，经双向时序编码由双头输出极性与强度，训练期由冻结教师提供分类与强度蒸馏。问题三以子集感知编码为预测器，通过固定参考类别的模态联盟枚举分配模态贡献，用锚点块删除定位局部证据，并以累计删除对照、多基线与多种子分析校验解释结果。
+
+三问并非串联流水线。问题一不向问题二、问题三传递特征，只提供内容位置与观测掩码的三态口径以及词级时间锚点，问题三的证据回映沿用同一时间映射方式；问题二与问题三同源附件2、共享输入接口与三态口径，但各自独立训练、不共享参数。特征维度亦不混用：问题一输出自提取的三模态接口（768/25/16），问题二与问题三使用附件2至附件4的官方对齐特征（768/74/35）。图中实线表示处理流程，虚线框表示训练期与校验环节，跨面板虚线箭头标注上述方法联系。
+
+\subsection{各问题的关键难点}
+问题一的核心是离散词元与连续音视频之间的时间对应。三模态采样率不同，且存在转写失败与人脸检出失败，需在词这一公共锚点上给出可核验的区间记录。拟以CTC词级强制对齐确定锚点，按字符偏移建立子词归属，以时间交叠权重聚合音视频特征，并通过覆盖率与边界扰动评价观测完整性与敏感性。
+
+问题二的难点在于连续缺口内可能同时失去多模态证据，若以插补值充当观测，误差会沿融合路径继续传播。为此先区分填充、观测与局部缺失三种状态，仅从缺口外的可观测节点构造补全表示，并由门控控制其融合比例；训练阶段由完整输入学习的教师模型通过任务蒸馏约束学生，使基础性能不因鲁棒性设计而退化。实验按基础性能、缺失因素与组件作用三组对照展开，使设计选择与实测效果相互对应。
+
+问题三的难点在于区分预测准确性与解释忠实性，并保持干预前后解释目标的一致性。拟以固定参考类别下的精确模态Shapley值刻画全局作用，以词元重编码后的局部删除衡量片段贡献，并将证据回映至原始转写、音频与视频帧；通过累计删除对照、多基线与多种子重复分别评价局部证据效果与解释稳定性。

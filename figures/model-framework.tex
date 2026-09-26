@@ -1,0 +1,25 @@
+\begin{tikzpicture}[
+  box/.style={draw=black!45,fill=black!3,rounded corners=2pt,
+    text width=4.55cm,minimum height=1.12cm,align=center,font=\small},
+  arrow/.style={-{Latex[length=2mm]},thick,draw=black!65}]
+\node[font=\small\bfseries] at (0,0.55) {问题一：特征与时间组织};
+\node[font=\small\bfseries] at (5.2,0.55) {问题二：局部缺失预测};
+\node[font=\small\bfseries] at (10.4,0.55) {问题三：贡献与证据解释};
+\node[box,fill=blue!6] (a1) at (0,-0.45) {附件1：100条原始视频\\官方转写与音视频信号};
+\node[box,fill=green!6] (b1) at (5.2,-0.45) {附件2：训练与验证\\附件3：专项预测};
+\node[box,fill=orange!7] (c1) at (10.4,-0.45) {附件2：训练与验证\\附件4：预测与证据回映};
+\node[box] (a2) at (0,-2.05) {文本、语音与视觉特征\\CTC原词区间与子词归属};
+\node[box] (b2) at (5.2,-2.05) {三态掩码与观测节点补全\\可靠度门控与双向时序编码};
+\node[box] (c2) at (10.4,-2.05) {模态子集训练与双任务预测\\固定参考类别的联盟分解};
+\node[box] (a3) at (0,-3.65) {时间交叠池化\\覆盖率与边界扰动分析};
+\node[box] (b3) at (5.2,-3.65) {标签、蒸馏与重建联合目标\\缺失因素分析与组件消融};
+\node[box] (c3) at (10.4,-3.65) {局部删除与忠实性检验\\种子及解释基线敏感性};
+\node[box,fill=blue!6] (a4) at (0,-5.25) {100条自主特征与时间记录\\三模态维度：768/25/16};
+\node[box,fill=green!6] (b4) at (5.2,-5.25) {附件3全部30条预测\\情感极性与连续强度};
+\node[box,fill=orange!7] (c4) at (10.4,-5.25) {附件4全部20条预测与解释\\模态贡献与原始关键片段};
+\foreach \prefix in {a,b,c} {
+  \draw[arrow] (\prefix1)--(\prefix2);
+  \draw[arrow] (\prefix2)--(\prefix3);
+  \draw[arrow] (\prefix3)--(\prefix4);
+}
+\end{tikzpicture}

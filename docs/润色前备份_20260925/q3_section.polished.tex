@@ -1,0 +1,173 @@
+\subsection{问题三的模型建立与求解}
+\label{sec:q3}
+\subsubsection{问题分析与建模思路}
+问题三要求在输出情感极性与强度的同时，确定主要参考模态、量化模态作用程度，并定位可回看至原始素材的局部证据。为此，建立输入干预联盟Shapley解释模型（ICF-Shapley），按“情感预测、模态贡献分解、局部证据定位、原素材回映”四个步骤求解。
+
+模型由子集感知预测器（SAP）与两级解释方法组成。预测器采用三态输入和双向时序编码，在附件2上独立训练；模态层精确枚举文本、语音和视觉的8个联盟，以Shapley值分配预测变化；片段层逐块删除输入，以固定类别的预测响应衡量局部作用。沿用前两问的内容掩码、观测掩码及原词时间区间记号，预测器关闭补全分支，使干预后的输入状态由观测掩码直接控制。
+
+\subsubsection{数据准备}
+\paragraph{输入组织与可用模态}
+采用附件2的对齐版特征，训练、验证、测试样本分别为3395、728、727条，文本、语音和视觉特征形状分别为$50\times768$、$50\times74$和$50\times35$。以$P_{ik}$表示内容掩码，$O^m_{ik}$表示模态$m$的观测掩码；标准化统计量仅由训练集观测位置估计。文本使用冻结的\file{bert-base-uncased}编码，训练与专项推理保持同一接口。
+
+附件4包含20条样本，共@@N_ANCHORS@@个内容锚点，单条长度介于@@MIN_ANCHORS@@与@@MAX_ANCHORS@@之间。第13条视觉特征在30个内容位置均为零，因此将该特征分支标记为不可用。定义
+\begin{equation}
+L_i=\sum_kP_{ik},\quad \mathcal A_i=\{m\in\mathcal M:\sum_kO^m_{ik}>0\},\quad
+\rho_i^m=\frac{\sum_kO^m_{ik}}{L_i},\qquad\mathcal M=\{t,a,v\}.
+\end{equation}
+其中$\rho_i^m$描述观测比例。不可用模态在所有联盟中保持缺失，输出贡献记为NA；该标记描述特征文件的可用性。
+
+\paragraph{片段划分与时间回映}
+将内容区划分为不重叠的2锚点块$E$，末块允许不足2个锚点。解释时保持序列长度和位置不变，仅改变相应输入及观测状态。文本块先替换为\file{[UNK]}，再对整句重新编码；语音和视觉块通过观测掩码删除。
+
+附件4原始转写与音轨经词级CTC强制对齐，得到原词区间$A_{iu}=[a_{iu},b_{iu})$。若块$E$对应原词集合$\mathcal U_i(E)=\{g_i(k):k\in E\}$，则证据时间范围为
+\begin{equation}
+I_i(E)=\left[\min_{u\in\mathcal U_i(E)}a_{iu},\ \max_{u\in\mathcal U_i(E)}b_{iu}\right).
+\end{equation}
+包含部分子词时按所属原词完整区间回映。逐位核验分词序列后，仅对已获得有效词区间的证据输出秒数，并按真实视频PTS提取距区间中点最近的关键帧；其余保留锚点索引与状态标记。
+
+\subsubsection{模型构建}
+\paragraph{三态投影与时序编码}
+令$s^m_{ik}\in\{0,1,2\}$分别表示结构填充、已观测和内容缺失。最终采用单层预测器，其输入表示为
+\begin{equation}
+z^m_{ik}=\operatorname{Lin}_m(X^m_{ik})+e_m^{\mathrm{mod}}+e_k^{\mathrm{pos}}+e^{\mathrm{state}}_{s^m_{ik}},\qquad
+\widetilde z^m_{ik}=O^m_{ik}z^m_{ik}+P_{ik}(1-O^m_{ik})e_m^{\mathrm{miss}}.
+\end{equation}
+按内容长度打包序列，分别输入逐模态双向GRU，避免结构填充参与递归。设隐藏维度为$d$，对各模态内容位的编码结果$h^m_{ik}$分别取均值与最大值，再拼接观测比例：
+\begin{equation}
+u_i=\operatorname{Concat}_{m\in\mathcal M}\left(\frac1{L_i}\sum_kh^m_{ik},\max_kh^m_{ik}\right)
+\mathbin\Vert[\rho_i^t,\rho_i^a,\rho_i^v],\qquad h_i=\operatorname{MLP}(u_i).
+\end{equation}
+融合向量维度为$6d+3$，分类与回归头分别输出
+\begin{equation}
+p_i=\operatorname{softmax}(W_ch_i+b_c),\qquad \widehat r_i=3\tanh(W_rh_i+b_r).
+\end{equation}
+
+\paragraph{子集训练与目标函数}
+最终采用C0方案：以0.70的概率保留全部模态，其余0.30均匀分配给7个非完整联盟，包含空集。对采样联盟$S_i$，令$\widetilde O^m_{ik}=O^m_{ik}\mathbf1\{m\in S_i\}$。训练目标为
+\begin{equation}
+\mathcal L_3=\operatorname{CE}_w(y_i,p_i)+\operatorname{Huber}_1(r_i,\widehat r_i)
++0.2\left[(p_{i,+}-p_{i,-})-\tanh(\widehat r_i/3)\right]^2.
+\end{equation}
+类别权重由训练集频数确定，Huber损失拟合连续强度，最后一项约束两类输出的方向一致性。该方案覆盖模态联盟输入；连续片段遮挡增广及更深网络作为候选变体单独比较。
+
+\paragraph{模态贡献与主要参考模态}
+以三种子平均概率$\bar p_i$确定原始可用输入的参考类别$c_i^*=\arg\max_c\bar p_{ic}(\mathcal A_i)$，解释全过程固定该类别。对联盟$S\subseteq\mathcal M$，定义
+\begin{equation}
+F_i^{\mathrm{cls}}(S)=\log\frac{\bar p_{i,c_i^*}(S)}{1-\bar p_{i,c_i^*}(S)},\qquad
+F_i^{\mathrm{reg}}(S)=\overline{\widehat r}_i(S).
+\end{equation}
+数值计算时将概率截断至$[10^{-6},1-10^{-6}]$。对分类与强度分别计算Shapley贡献：
+\begin{equation}
+\phi_i^m=\sum_{S\subseteq\mathcal M\setminus\{m\}}\frac{|S|!(2-|S|)!}{3!}
+\left[F_i(S\cup\{m\})-F_i(S)\right],\qquad
+\sum_{m\in\mathcal A_i}\phi_i^m=F_i(\mathcal A_i)-F_i(\varnothing).
+\end{equation}
+贡献为正表示相对基线抬高价值，为负表示压低价值。以分类贡献绝对值最大的可用模态为主要参考模态，作用份额定义为
+\begin{equation}
+m_i^*=\arg\max_{m\in\mathcal A_i}|\phi_i^{m,\mathrm{cls}}|,\qquad
+\omega_i^m=\frac{|\phi_i^{m,\mathrm{cls}}|}{\sum_{j\in\mathcal A_i}|\phi_i^{j,\mathrm{cls}}|}.
+\end{equation}
+当总贡献幅度小于$10^{-8}$时标记为无法区分；其余同时报告作用份额与有符号贡献，以区分作用大小和方向。
+
+\paragraph{局部证据与解释评价}
+记$F_i^{\mathrm{cls,del}(m,E)}$为仅删除模态$m$中块$E$后的固定类别价值，定义
+\begin{equation}
+\Delta_i^m(E)=F_i^{\mathrm{cls}}(\mathcal A_i)-F_i^{\mathrm{cls,del}(m,E)}.
+\end{equation}
+$\Delta_i^m(E)>0$表示该片段支持参考类别，小于零表示抑制参考类别。对全部可用模态计算逐块响应，并在各模态中按响应降序选取局部证据。
+
+在主要参考模态中，按块数的10\%、20\%、30\%向上取整，分别累计删除高分块、低分块和随机块；随机顺序重复3次，并报告实际锚点覆盖率。以三个删除档位的平均概率下降定义AOPC，按样本配对比较高分与随机删除，采用2000次bootstrap估计区间。条件充分性保留其他模态及主要模态的高分块，计算相对原预测的绝对概率偏差。另以训练集同位置均值（B2）和模态内顺序打乱（B3）替代缺失状态基线（B1），比较主模态一致率及贡献排序。
+
+\subsubsection{模型求解与参数设置}
+\paragraph{候选比较与模型选择}
+以C0为基准，设置三个递进变体：V1调整联盟采样并加入连续块遮挡；V2进一步采用两层BiGRU、逐模态LayerNorm和回归支路；V3增加联盟单调一致性正则。V1与V2各包含多项联合改动，因此比较反映方案组合的影响。V3约束增补模态后的参考类别响应，其单调性不等价于贡献可加性。
+
+选模指标为$J=\mathrm{Macro\mbox{-}F1}-0.1\mathrm{MAE}$。候选须同时满足：$J$不低于C0减0.002；去文本、去语音、去视觉及全缺失四种状态的平均Macro-F1不低于C0减0.002；解释AOPC差不低于C0减0.005。通过者按缺失状态平均Macro-F1排序，并列时比较$J$。训练早停与变体选择使用验证集，最终在附件2测试集评价预测性能，对附件4输出预测与解释。
+
+\begin{table}[htbp]\centering\small
+\caption{最终SAP预测器及解释参数}\label{q3:tab:params}
+\begin{tabularx}{\linewidth}{p{3.4cm}Y}\toprule
+项目 & 设置\\\midrule
+网络 & 投影维度64；单层BiGRU，单方向32；融合MLP；Dropout 0.2\\
+优化 & AdamW；学习率0.0015；权重衰减$10^{-4}$；余弦调度\\
+训练 & 批量256；至多32轮；早停耐心8；梯度范数上限5；种子0、1、2\\
+联盟采样 & 全集0.70，其余7个联盟各$0.30/7$；最终模型无块遮挡增广\\
+解释 & 8个联盟精确枚举；局部2锚点块；3组随机删除；样本bootstrap 2000次\\
+验证子集 & 固定种子20260925随机抽取96条，用于解释诊断和候选比较\\
+计算环境 & Python 3.12；PyTorch 2.8.0+cu128；RTX 5060 Ti\\\bottomrule
+\end{tabularx}\end{table}
+
+\begin{algorithm}[htbp]
+\caption{ICF-Shapley预测与证据定位}\label{q3:alg}\small
+\textbf{输入：}三模态特征、掩码、原始素材、冻结预测器与标准化参数。\par
+\textbf{输出：}情感极性、强度、模态贡献、主要参考模态及局部证据。\par
+\begin{enumerate}
+\item 计算可用集合$\mathcal A_i$与集成预测，固定参考类别$c_i^*$。
+\item 枚举8个模态联盟，计算分类log-odds与预测强度。
+\item 求解两类Shapley值，核验效率性，输出$\omega_i^m$与$m_i^*$。
+\item 遍历各可用模态的2锚点块，实施输入删除，计算$\Delta_i^m(E)$。
+\item 选择各模态最高分片段，由原词CTC区间及视频PTS定位证据。
+\item 保存预测、贡献与逐块响应，生成解释卡；在验证子集评价忠实性、条件充分性及稳定性。
+\end{enumerate}
+\end{algorithm}
+
+\subsubsection{实验结果与分析}
+\paragraph{预测性能与候选比较}
+@@SELECT_TEXT@@
+\begin{table}[htbp]\centering\small
+\caption{SAP三种子集成的预测性能}\label{q3:tab:perf}
+\begin{tabular}{lrrrr}\toprule
+数据集 & Accuracy & Macro-F1 & MAE & Pearson\\\midrule
+@@PERF_ROWS@@
+\bottomrule\end{tabular}\end{table}
+验证集负向、中性、正向F1依次为@@CLASS_F1@@，类别判别的主要空间位于中性边界。图\ref{q3:fig:perf}展示类别间的混淆及各类别指标。
+\begin{figure}[htbp]\centering\includegraphics[width=.92\linewidth]{figures/q3_performance.png}
+\caption{验证集混淆矩阵与分类指标。}\label{q3:fig:perf}\end{figure}
+
+\begin{table}[htbp]\centering\small
+\caption{候选方案与实现对照的验证结果}\label{q3:tab:ablation}
+\begin{tabular}{lrrrrr}\toprule
+方案 & $J$ & Macro-F1 & MAE & AOPC差 & 种子一致率\\\midrule
+@@ABLATION_ROWS@@
+\bottomrule\end{tabular}\end{table}
+@@ABLATION_TEXT@@
+整模态删除进一步表明，C0去文本后的Macro-F1为0.4150，去语音和去视觉后分别为0.6092、0.5974，相对完整输入的0.6170，文本删除造成的下降最大。仅完整输入训练的单种子模型去文本后为0.2904；两者集成规模不同，该差值同时包含训练方案与集成影响。全缺失结果仅作为输入状态诊断，其预测仍可能利用保留的内容长度。
+
+\paragraph{模态作用差异}
+@@COAL_TEXT@@
+图\ref{q3:fig:coal}显示，文本的平均Shapley贡献为$+1.105$，构成预测的主导信息来源；语音与视觉分别贡献$+0.068$与$+0.056$，在三模态协同中提供补充信息，主参考模态分布与贡献排序一致。样本层的正负贡献与主参考模态另行保留，以刻画个体差异。效率性残差不超过@@RESIDUAL@@，满足Shapley效率性公理。
+\begin{figure}[htbp]\centering\includegraphics[width=.94\linewidth]{figures/q3_coalition_value.png}
+\caption{模态联盟的平均分类价值与三模态平均Shapley贡献。}\label{q3:fig:coal}\end{figure}
+
+\paragraph{局部证据与解释检验}
+96条验证样本共完成3397个局部块干预，文本、语音、视觉的平均绝对log-odds响应分别为0.377、0.015和0.025，局部响应同样以文本为主。典型样本的逐块分布见图\ref{q3:fig:card1}，累计删除结果见图\ref{q3:fig:faith}。
+@@FAITH_TEXT@@
+\begin{figure}[htbp]\centering\includegraphics[width=\linewidth]{figures/q3_faithfulness.png}
+\caption{高分、随机与低分块累计删除对比、基线敏感性及条件充分性。}\label{q3:fig:faith}\end{figure}
+三种子两两主参考模态一致率为82.29\%、83.33\%和86.46\%。输入删除能够识别对当前预测作用较强的片段，主参考模态仍随训练种子和基线变化。上述96条样本同时参与候选比较，置信区间描述该验证子集上的配对差异。
+
+\paragraph{错误分布与归因分析}
+验证集共@@N_ERRORS@@条误判，其中@@N_NEUTRAL@@条涉及中性，占@@P_NEUTRAL@@\%。@@ERROR_GROUP_TEXT@@。错误主要集中在中性与弱情感的区分，提示零点附近的类别判别比强情感方向判断更困难。
+
+在96条解释样本中，低强度组与高强度组的解释不稳定率分别为31.7\%和23.6\%，覆盖正确与错误预测两类样本，给出解释稳定性在不同强度水平上的分布。错误分析将改进重点指向中性边界与弱情感区间的表征增强。
+
+\paragraph{附件4全量结果}
+附件4全部20条样本的预测分布为@@PRED_DIST@@，分类主参考模态为@@MAIN_DIST@@。图\ref{q3:fig:a4}给出全量预测、模态份额和种子间波动，表\ref{q3:tab:all20}列出逐条数值。@@A4_TEXT@@
+\begin{figure}[htbp]\centering\includegraphics[width=\linewidth]{figures/q3_a4_overview.png}
+\caption{附件4全部20条样本的情感预测、模态作用份额与种子间波动。}\label{q3:fig:a4}\end{figure}
+\begin{table}[htbp]\centering\small
+\caption{附件4全量预测与分类模态作用份额}\label{q3:tab:all20}
+\begin{tabular}{clrrrrl}\toprule
+编号 & 极性 & 强度 & 文本份额 & 语音份额 & 视觉份额 & 主模态\\\midrule
+@@ALL20_ROWS@@
+\bottomrule\end{tabular}\end{table}
+\file{pred\_附件4.csv}保存预测及分类、强度的有符号贡献；\file{explain\_附件4.csv}按样本和模态保存证据片段、时间与媒体索引，共60行，包含不可用状态；\file{local\_blocks\_附件4.csv}保存全部逐块响应。
+
+\paragraph{典型样本与证据回映}
+选取附件4第1条展示完整解释链条。@@CARD_TEXT@@ 图\ref{q3:fig:card1}同时展示预测结果、三模态作用程度、主要模态的逐块响应与原始关键帧；响应的正负分别对应支持和抑制作用。
+\begin{figure}[htbp]\centering\includegraphics[width=.90\linewidth]{figures/q3_card_01.png}
+\caption{附件4第1条解释卡：预测、模态份额、局部片段重要性与关键证据定位。}\label{q3:fig:card1}\end{figure}
+20条样本的重新分词序列均与官方词元一致，@@TOTAL_WORDS@@个原词中@@ALIGNED_WORDS@@个获得CTC时间区间；@@N_EVIDENCE@@条可用模态证据中@@MAPPED_EVIDENCE@@条完成时间回映。时间区间为自动对齐估计，未映射证据保留锚点索引。第13条视觉特征不可用，其解释保留文本与语音贡献，并在全量文件中标注视觉NA。
+
+本模型将情感预测分解为可复核的模态贡献与局部响应，再通过词级时间区间连接到原始素材。Shapley值度量指定模型及基线下的作用差异，删除实验检验局部证据与预测响应的一致性；附件4无标签，其结果用于呈现预测与解释，不用于估计专项预测准确率。
+\FloatBarrier

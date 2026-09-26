@@ -1,0 +1,223 @@
+{
+  "valid_main_distribution": [
+    86,
+    3,
+    7
+  ],
+  "baseline_agreement": {
+    "B2": {
+      "agreement": 0.90625,
+      "kappa": 0.5686470294558162,
+      "confusion": [
+        [
+          80,
+          2,
+          4
+        ],
+        [
+          1,
+          2,
+          0
+        ],
+        [
+          2,
+          0,
+          5
+        ]
+      ]
+    },
+    "B3": {
+      "agreement": 0.875,
+      "kappa": -0.02309058614564852,
+      "confusion": [
+        [
+          84,
+          2,
+          0
+        ],
+        [
+          3,
+          0,
+          0
+        ],
+        [
+          7,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "seed_agreement": {
+    "0-1": {
+      "agreement": 0.8229166666666666,
+      "kappa": 0.24022346368715056,
+      "confusion": [
+        [
+          75,
+          2,
+          5
+        ],
+        [
+          4,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          4
+        ]
+      ]
+    },
+    "0-2": {
+      "agreement": 0.8333333333333334,
+      "kappa": 0.17684887459807108,
+      "confusion": [
+        [
+          78,
+          1,
+          3
+        ],
+        [
+          3,
+          1,
+          0
+        ],
+        [
+          8,
+          1,
+          1
+        ]
+      ]
+    },
+    "1-2": {
+      "agreement": 0.8645833333333334,
+      "kappa": 0.22436295835922976,
+      "confusion": [
+        [
+          81,
+          1,
+          3
+        ],
+        [
+          1,
+          1,
+          0
+        ],
+        [
+          7,
+          1,
+          1
+        ]
+      ]
+    }
+  },
+  "a4_b1_b2": {
+    "agreement": 0.75,
+    "kappa": -0.07526881720430088,
+    "confusion": [
+      [
+        15,
+        1,
+        3
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0
+      ]
+    ]
+  },
+  "a4_class_reg_main_difference": 5,
+  "auc_tie_counterexample": 1.0,
+  "magnitude_bins_raw": [
+    184,
+    1,
+    146,
+    198,
+    125,
+    74
+  ],
+  "magnitude_bins_tolerance": [
+    184,
+    147,
+    118,
+    80,
+    125,
+    74
+  ],
+  "length_bins_total": 536,
+  "valid_count": 728,
+  "holm_smallest": {
+    "base": "mask_token",
+    "p": 0.033,
+    "adjusted_p": 0.264
+  },
+  "kd_sweep": [
+    {
+      "tag": "p_kd1",
+      "J": 0.5267
+    },
+    {
+      "tag": "p_kd1_T4",
+      "J": 0.5263
+    },
+    {
+      "tag": "p_kd1_T1",
+      "J": 0.5258
+    },
+    {
+      "tag": "p_rec_rel",
+      "J": 0.5255
+    },
+    {
+      "tag": "p_kd1_r1",
+      "J": 0.5248
+    },
+    {
+      "tag": "p_none",
+      "J": 0.5237
+    },
+    {
+      "tag": "p_full",
+      "J": 0.5235
+    },
+    {
+      "tag": "p_kd2",
+      "J": 0.5197
+    }
+  ],
+  "archives": {
+    "latexmkrc.zip": {
+      "bytes": 50325121,
+      "contains_06170": true,
+      "contains_01068": true,
+      "contains_function_words": false,
+      "python_files": 0,
+      "weight_files": 0
+    },
+    "main.zip": {
+      "bytes": 47213442,
+      "contains_06170": false,
+      "contains_01068": false,
+      "contains_function_words": false,
+      "python_files": 0,
+      "weight_files": 0
+    },
+    "原论文.zip": {
+      "bytes": 45860011,
+      "contains_06170": false,
+      "contains_01068": false,
+      "contains_function_words": false,
+      "python_files": 0,
+      "weight_files": 0
+    }
+  },
+  "pdf_pages": 47
+}
