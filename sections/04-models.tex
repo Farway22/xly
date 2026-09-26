@@ -325,7 +325,7 @@ Q^m_{iu}=c_{iu}\,d^m_{iu}\exp(-\gamma_m\vt^m_{iu}),\qquad \gamma_a=\gamma_v=1.
 
 \paragraph{典型样本的文本、语音与视频对应}
 
-选取样本\file{-yRb-Jum7EQ\$\_\$5}。该句以否定与转折改变语义走向：\textit{not by the students of terrorism, but by those who teach terrorism}；三类模态在该片段内均有观测，语义转折处伴随可核验的韵律变化，适合用于展示跨模态对应关系。图\ref{q1:fig:typical}在统一秒轴上给出25个原词的音频区间、关键帧与两类帧级特征，帧级特征面板按维度标准化以便同图对比，点线为否定词\textit{not}的切分时刻；表\ref{q1:tab:typical}给出词区间、词元数、模态覆盖率以及词处的音高与能量。文本向量由这些词对应的内容位置取得，视频帧通过PTS定位，不由50位下标换算时间。
+选取样本\file{-yRb-Jum7EQ\$\_\$5}。该句以否定与转折改变语义走向：\textit{not by the students of terrorism, but by those who teach terrorism}；三类模态在该片段内均有观测，语义转折处伴随可核验的韵律变化，适合用于展示跨模态对应关系。图\ref{q1:fig:typical}在统一秒轴上给出25个原词的音频区间、关键帧与两类帧级特征，帧级特征面板按维度标准化以便同图对比，点线为否定词\textit{not}的切分时刻；表\ref{q1:tab:typical}给出所选词的语音区间、词元数以及词处的音高与能量，这些词的音频与视觉覆盖均为1.00。文本向量由这些词对应的内容位置取得，视频帧通过PTS定位，不由50位下标换算时间。
 
 \begin{figure}[htbp]
 \centering
@@ -337,16 +337,16 @@ Q^m_{iu}=c_{iu}\,d^m_{iu}\exp(-\gamma_m\vt^m_{iu}),\qquad \gamma_a=\gamma_v=1.
 \centering\small
 \caption{典型样本的词区间与三模态映射}
 \label{q1:tab:typical}
-\begin{tabular}{lcccccc}
+\begin{tabular}{lcccc}
 \toprule
-原词 & 语音区间(s) & 词元数 & $d^a$ & $d^v$ & $F_0$ (半音) & 能量 \\
+原词 & 语音区间(s) & 词元数 & $F_0$ (半音) & 能量 \\
 \midrule
-\texttt{lost} & [1.48, 1.68) & 1 & 1.00 & 1.00 & 18.1 & 0.14 \\
-\texttt{attack,} & [5.42, 6.14) & 2 & 1.00 & 1.00 & 20.3 & 0.21 \\
-\texttt{not}$^{\dagger}$ & [6.26, 6.48) & 1 & 1.00 & 1.00 & 21.2 & 0.34 \\
-\texttt{but}$^{\dagger}$ & [8.78, 9.08) & 1 & 1.00 & 1.00 & 27.9 & 0.76 \\
-\texttt{teach} & [10.10, 10.24) & 1 & 1.00 & 1.00 & 29.3 & 0.36 \\
-\texttt{teacher.} & [12.46, 12.80) & 2 & 1.00 & 1.00 & 23.0 & 0.33 \\
+\texttt{lost} & [1.48, 1.68) & 1 & 18.1 & 0.14 \\
+\texttt{attack,} & [5.42, 6.14) & 2 & 20.3 & 0.21 \\
+\texttt{not}$^{\dagger}$ & [6.26, 6.48) & 1 & 21.2 & 0.34 \\
+\texttt{but}$^{\dagger}$ & [8.78, 9.08) & 1 & 27.9 & 0.76 \\
+\texttt{teach} & [10.10, 10.24) & 1 & 29.3 & 0.36 \\
+\texttt{teacher.} & [12.46, 12.80) & 2 & 23.0 & 0.33 \\
 \bottomrule
 \end{tabular}
 \end{table}
