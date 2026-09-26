@@ -764,7 +764,7 @@ J=0.5F_{\mathrm{base}}+0.5\left(\frac14\sum_{c\in\mathcal C}F_c\right)
 目标区间比例由5\%增至40\%时，平均F1由0.6151降至0.5911，MAE由0.6351增至0.6691，Pearson相关系数由0.6659降至0.6233，信息损失同时削弱分类判别与强度排序（图\ref{q2:fig:metriccurve}）。分模态看，文本缺口与三模态共缺两条曲线在四项指标上都随比例单调退化，文本的Pearson相关系数由0.6532降至0.5795；语音与视觉单模态缺口的曲线几乎水平，整段比例的波动不足0.001，退化几乎全部来自文本通道。文本与三模态共缺的曲线在各比例上高度接近，说明重叠区段的音视频缺失没有带来额外损失，与模态消融的结论一致。\par\end{samepage}
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth]{figures/q2_v4_missing.png}
+\includegraphics[width=0.9\linewidth]{figures/q2_v4_missing.png}
 \caption{不同缺失模态与目标区间比例下四项指标的退化曲线}\label{q2:fig:metriccurve}
 \end{figure}
 
