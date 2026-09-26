@@ -7,8 +7,7 @@
   inchip/.style={draw=black!50,dashed,fill=black!2,rounded corners=2pt,align=center,font=\scriptsize,inner sep=2pt,minimum height=0.55cm},
   outchip/.style={draw,rounded corners=2.5pt,align=center,font=\footnotesize,inner sep=3pt,minimum height=0.8cm},
   data/.style={draw=black!55,fill=white,rounded corners=3pt,align=center,font=\small,inner sep=4pt},
-  flow/.style={-{Latex[length=1.7mm]},draw=black!70,semithick},
-  dflow/.style={-{Latex[length=1.7mm]},draw=black!55,dashed,semithick}
+  flow/.style={-{Latex[length=1.7mm]},draw=black!70,semithick}
 ]
 
 % ---------- 数据来源 ----------
@@ -88,8 +87,5 @@
 \draw[flow] (12.0,-7.85) -- (12.0,-8.05);
 \node[outchip,fill=orange!14,draw=orange!80!black,text width=4.3cm] at (12.0,-8.50) {预测、主要模态与关键证据};
 
-% ---------- 问题间方法联系 ----------
-\draw[dflow] (0,-9.15) -- (0,-9.75) -- (12.0,-9.75) -- (12.0,-9.15);
-\node[fill=white,font=\scriptsize,inner sep=2pt] at (6.0,-9.75) {问题三复用词级对齐方法};
 
 \end{tikzpicture}
