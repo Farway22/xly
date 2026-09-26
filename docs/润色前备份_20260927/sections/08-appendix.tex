@@ -1,0 +1,224 @@
+\appendicesbegin
+\section{问题一自生成特征文件的存储组织}
+\label{app:q1-files}
+
+表\ref{q1:tab:checklist}所列张量、逐样本记录、帧级支撑与逐词明细构成问题一的全量特征文件，随附件提交；运行环境、关键参数、逐阶段耗时与输入哈希由程序在运行时自动记录，复现记录一并随支撑材料提交。特征张量、词级时间与帧级记录以样本键关联：读取时由样本键定位逐样本记录，再按内容掩码$P$与父词索引$U$将接口位置还原到词级区间。存储格式、组织结构与读取方式见表\ref{q1:tab:checklist}。
+
+\begin{table}[htbp]
+\centering\small
+\caption{自生成特征文件的存储组织与读取方式}
+\label{q1:tab:checklist}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{5.1cm}Y}
+\toprule
+文件 & 内容与读取方式 \\
+\midrule
+\file{E1\_features.pkl} & 全部100条样本的$X^t/X^a/X^v$、掩码与质量分量的汇总字典，含版本号与样本数；按样本键索引，用于全量读取与跨样本统计 \\
+\file{per\_sample/} & 逐样本记录，含特征矩阵、内容掩码$P$、父词索引$U$、观测掩码$O^a/O^v$、词级记录与元数据；文件名由样本键转换得到，是逐样本核对与追溯的入口 \\
+\file{frames/} & 帧级支撑，含音频帧特征与起止区间、视频帧PTS与有效标记；与逐样本记录按同一键关联，是帧级时间与覆盖的来源 \\
+\file{E1\_alignment\_detail.csv} & 1932条逐词明细，含区间$[a,b)$、路径置信度与覆盖、扰动及质量分量；用于定位单个词的时间与质量 \\
+\file{E1\_manifest.csv} & 样本级清单，含文本与媒体统计、模态覆盖、逐阶段耗时与输入哈希；用于覆盖统计与结果核验 \\
+\file{audit\_anchor.json} & 边界位置核验记录，含邻近停顿的1125个词界、734个随机对照的偏差分布与起止点分组统计；用于核对词界与声学停顿的对应关系 \\
+\file{env\_run\_start.json}、\file{run\_events.log}、\file{run\_log.json} & 运行环境快照（Python与各库版本、解码器与推理设备）、事件日志（启动、跳过、失败与汇总）与参数汇总（工具、关键参数、耗时与输入哈希）；用于复现核对 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{问题二结果文件与交付说明}
+\label{app:q2-files}
+
+附件3的完整预测按原始样本顺序导出为\file{pred\_附件3.csv}，逐条给出预测极性、连续强度、三类概率、内容锚点数与三模态缺失计数，并附强度预测的种子间标准差；三类概率的排序、极性判决与强度符号可直接由该文件复核。
+
+附件2上的评价结果与核验记录同步保留：\file{metrics.csv}保存十类模型在基础输入与105种连续缺失条件下的逐条件、逐种子分类与回归指标；\file{paired\_comparison.csv}保存相对九类基线的配对bootstrap区间与Holm校正结果；\file{mask\_audit.json}逐条件记录内容位、人工缺口与观测删除的核验值；\file{protocol.json}保存训练与评价协议参数及21个检查点的SHA-256哈希；\file{checks.json}保存划分、掩码与推理设备的一致性检查结果。上述文件与模型权重、逐种子训练日志随支撑材料一并提交。
+
+\section{问题二专项模型核心代码}
+\label{app:q2-code}
+
+问题二局部缺失情感预测专项模型（TSRF-D）的完整实现与训练脚本随支撑材料提交（\file{问题二实现}目录）。以下按三态投影、门控补全和联合损失节选核心代码，与正文式\eqref{q2:eq:total_loss}及相应结构对应；节选保留源文件中的循环与省略位置，便于与支撑材料逐行核对。
+
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\footnotesize,breaklines=true]
+# q2_model.py: tri-state projection (content / observed / missing)
+def _states(self, P, O):
+    s = torch.where(P, torch.full_like(P, 2, dtype=torch.long),
+                    torch.zeros_like(P, dtype=torch.long))
+    s = torch.where(P & O, torch.ones_like(s), s)
+    return s
+
+def _project(self, X, P, O, true_target=False):
+    z = {}
+    for mi, m in enumerate(MODS):
+        st = torch.ones_like(P, dtype=torch.long) if true_target else self._states(P, O[m])
+        base = self.e_mod[mi] + self.e_pos[: P.shape[1]]
+        zz = self.proj[m](X[m]) + (self.e_state[st] if self.cfg.use_state_emb else 0.0) + base
+        z[m] = zz if true_target else zz * P[..., None]
+    return z
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\footnotesize,breaklines=true]
+# q2_model.py: gated completion with distance, position and continuity prior
+def _complete(self, z, P, O):
+    cfg = self.cfg
+    B, K = P.shape
+    dev = P.device
+    d = cfg.d
+    known = {m: (P & O[m]) for m in MODS}
+    run = {m: _run_length(known[m]) for m in MODS}
+    cand_mask = torch.stack([known[m] for m in MODS], dim=1)          # (B,3,K)
+    cmat = cand_mask[:, None].expand(B, 3, 3, K).reshape(B, 3, 3 * K)
+    n_cand = cmat.sum(dim=-1)
+    empty = (n_cand == 0)
+    key = torch.stack([self.k_proj(z[m]) for m in MODS], dim=1)
+    val = torch.stack([self.v_proj(z[m]) for m in MODS], dim=1)
+    kmat = key.reshape(B, 3 * K, d)
+    vmat = val.reshape(B, 3 * K, d)
+    q_base = self.e_pos[:K][None, None, :, :] + self.e_state[2][None, None, None, :]
+    q = self.q_proj(q_base.expand(B, 3, K, d) + self.e_mod[None, :, None, :])
+    qf = q.reshape(B, 3 * K, d)
+    d2 = (qf.pow(2).sum(-1)[:, :, None] + kmat.pow(2).sum(-1)[:, None, :]
+          - 2.0 * torch.bmm(qf, kmat.transpose(1, 2))) / d
+    d2 = d2.clamp(min=0.0).reshape(B, 3, K, 3 * K)
+    cost = d2 + cfg.lam_t * self.dt[None, None, :, :]
+    cost = cost + (1.0 - cmat.float())[:, :, None, :] * 1e4
+    if cfg.use_u_score:
+        u = torch.stack([torch.sigmoid(cfg.alpha0 + cfg.alpha1 * known[m].float()
+                                       + cfg.alpha2 * (run[m] / cfg.run_scale).clamp(0.0, 1.0))
+                         for m in MODS], dim=1)
+    else:
+        u = torch.ones(B, 3, K, device=dev)
+    cost = cost + cfg.lam_q * (1.0 - u.reshape(B, 3 * K))[:, None, None, :]
+    cost = torch.where(empty[:, :, None, None], torch.zeros_like(cost), cost)
+    pi = torch.softmax(-cost / cfg.temperature, dim=-1) * cmat.float()[:, :, None, :]
+    pi = pi / pi.sum(-1, keepdim=True).clamp(min=1e-6)
+    pi = torch.where(empty[:, :, None, None], torch.zeros_like(pi), pi)
+    z_hat = torch.bmm(pi.reshape(B, 3 * K, 3 * K), vmat).reshape(B, 3, K, d)
+    cost_rho = torch.where(cmat.bool()[:, :, None, :],
+                           torch.clamp(cost, max=1e3),
+                           torch.full_like(cost, 1e4))
+    cbar = (pi * cost_rho).sum(-1)
+    cvar = (pi * (cost_rho - cbar[..., None]).pow(2)).sum(-1)
+    cmin = cost_rho.min(-1).values
+    nsrc = (n_cand.float() / (3.0 * K))[:, :, None].expand(B, 3, K)
+    aratio = torch.stack([known[m].float().sum(-1) / P.float().sum(-1).clamp(min=1)
+                          for m in MODS], dim=1)[..., None].expand(B, 3, K)
+    gin = torch.stack([cbar, cvar, cmin, nsrc, aratio], -1)          # (B,3,K,5)
+    if cfg.use_target_mod_gate:
+        gin = torch.cat([gin, self.e_mod[None, :, None, :].expand(B, 3, K, -1)], -1)
+    rho = torch.sigmoid(self.g_rho(gin)).squeeze(-1)
+    rho = torch.where(empty[:, :, None], torch.zeros_like(rho), rho)
+    return z_hat, rho, dict(n_cand=n_cand, run=run)
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\footnotesize,breaklines=true]
+# q2_train.py: compute_loss (excerpt; num/cnt averaging kept from source)
+l_cls = F.cross_entropy(logits, y, weight=batch["class_w"])
+l_reg = F.huber_loss(r_hat, r, delta=1.0)
+p = torch.softmax(logits, dim=-1)
+l_cons = ((p[:, 2] - p[:, 0]) - torch.tanh(r_hat / 3.0)).pow(2).mean()
+# ...
+if cfg["use_rec"] and rec:
+    num, cnt = 0.0, 0
+    for m, d in rec.items():
+        tgt = x_true[m][batch["hard"][m]]
+        num = num + F.smooth_l1_loss(d["pred"], tgt, beta=1.0, reduction="mean")
+        cnt += 1
+    if cnt:
+        l_rec = num / cnt
+# ...
+if cfg["use_kd_cls"] and batch.get("t_logits") is not None:
+    T = float(cfg.get("T_kd", 2.0))
+    tlog = batch["t_logits"].detach()
+    pT = torch.softmax(tlog / T, dim=-1)
+    logq = torch.log_softmax(logits / T, dim=-1)
+    l_dc = F.kl_div(logq, pT, reduction="batchmean") * (T * T)
+if cfg["use_kd_reg"] and batch.get("t_reg") is not None:
+    l_dr = F.huber_loss(r_hat, batch["t_reg"].detach(), delta=1.0)
+l = (l_cls + cfg["lam_r"] * l_reg + cfg["lam_c"] * l_cons
+     + cfg["lam_dc"] * l_dc + cfg["lam_dr"] * l_dr
+     + cfg["lam_rec"] * l_rec + cfg["lam_rel"] * l_rel)
+\end{lstlisting}
+
+\section{问题三结果文件与交付说明}
+\label{app:q3-files}
+
+附件4的预测、证据与逐块响应统一存放于交付目录\file{优化实验/输出}。\file{pred\_附件4.csv}保存全量预测及分类、强度双任务的有符号贡献；\file{evidence\_dual\_task.csv}按样本、模态与任务保存局部证据，共120行，逐条给出证据块的锚点位置、证据词、有符号响应、作用方向、CTC时间区间、关键帧索引与PTS、媒体文件及原视频哈希，其中118行完成时间回映，2行为第13条样本视觉分支不可用时的标记；\file{a4\_local\_all.json}保存全部逐块删除响应，可用于复核证据排序与作用方向。
+
+解释卡按统一模板生成，保留有符号最高分片段、逐块响应、证据词时间与关键帧，涵盖跨模态分歧、视觉主模态与缺模态降级三类样本；逐样本的跨模态一致性记录见\file{cards\_summary.csv}，20张卡片与该表一并随支撑材料提交。
+
+\section{问题三专项模型核心代码}
+\label{app:q3-code}
+
+问题三子集感知可解释预测专项模型的完整实现随支撑材料提交（\file{问题三实现}目录）。以下按联盟采样、目标函数、精确Shapley、逐块删除与忠实性评价节选核心代码。
+
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\footnotesize,breaklines=true]
+# q3_train.py: coalition sampling for C0 (0.70 full set, 0.30 uniform over 7 subsets)
+def sample_bits(self, n, rng):
+    if self.variant['sampling'] == 'full':
+        return np.full(n, 7)
+    if self.variant['sampling'] == 'uniform':
+        bits = np.full(n, 7)
+        ch = rng.random(n) < .3
+        bits[ch] = rng.integers(0, 7, int(ch.sum()))
+        return bits
+    return rng.choice(8, n, p=WEIGHTS)
+
+# q3_train.py: subset-aware objective (CE + Huber + direction consistency, weight 0.2)
+loss = (F.cross_entropy(z['logits'], y[blk], weight=cw)
+        + F.huber_loss(z['r_hat'], r[blk])
+        + BASE['cons'] * ((pr[:, 2] - pr[:, 0]) - torch.tanh(z['r_hat'] / 3)).square().mean())
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\footnotesize,breaklines=true]
+# q3_explain.py: exact Shapley values for three players
+def shapley(values):
+    values = np.asarray(values, dtype='float64')
+    out = np.zeros((len(values), 3), dtype='float64')
+    for j in range(3):
+        for s in range(8):
+            if s & (1 << j):
+                continue
+            k = s.bit_count()
+            w = math.factorial(k) * math.factorial(2 - k) / 6
+            out[:, j] += w * (values[:, s | (1 << j)] - values[:, s])
+    return out
+
+# q3_explain.py: enumerate the 8 coalitions (B1 baseline) and verify efficiency
+for s in range(8):
+    X = {m: d['X'][m].copy() for m in Q.MODS}
+    O = {m: d['O'][m].copy() for m in Q.MODS}
+    for j, m in enumerate(Q.MODS):
+        if not s & (1 << j):
+            X[m][:] = 0
+            O[m][:] = False
+    p, r = Q.predict(ms, X, d['P'], O, per_seed=True)
+    probs.append(p)
+    regs.append(r)
+# ...
+value = np.stack([logodds(p[:, s], ref) for s in range(8)], 1)
+phi = shapley(value)
+residual = np.abs(phi.sum(1) - (value[:, 7] - value[:, 0]))
+assert residual.max() < 1e-8
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\footnotesize,breaklines=true]
+# q3_explain.py: block-wise deletion, AOPC and sufficiency (excerpt)
+def blocks_of(d, i):
+    pos = np.flatnonzero(d['P'][i])
+    return [pos[j:j + 2].tolist() for j in range(0, len(pos), 2)], pos
+
+orders = {'top': np.argsort(-scores[i], kind='stable'),
+          'low': np.argsort(scores[i], kind='stable')}
+orders.update({f'random{k}': rng.permutation(len(bb)) for k in range(3)})
+for kind, order in orders.items():
+    for f in fractions:
+        nb = min(len(bb), max(1, int(np.ceil(f * len(bb)))))
+        kk = sorted(k for j in order[:nb] for k in bb[j])
+        requests.append((i, m, kk))
+        if kind == 'top':
+            other = np.setdiff1d(pos, kk).tolist()
+            requests.append((i, m, other))
+            keys.append((i, 'sufficiency', f))
+# ...
+boot = diffs[rng.integers(0, len(diffs), (2000, len(diffs)))].mean(1)
+summary = dict(curves=curves, fractions=fractions, n=len(diffs),
+               aopc_top_minus_random=float(diffs.mean()),
+               ci95=np.quantile(boot, [.025, .975]).tolist())
+\end{lstlisting}

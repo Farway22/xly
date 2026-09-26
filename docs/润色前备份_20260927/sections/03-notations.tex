@@ -1,0 +1,44 @@
+\section{符号说明}
+\begin{longtable}{>{\centering\arraybackslash}p{3.6cm}>{\centering\arraybackslash}p{\dimexpr\linewidth-3.6cm-4\tabcolsep\relax}}
+\toprule
+符号 & 含义 \\
+\midrule
+\endfirsthead
+\toprule
+符号 & 含义 \\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
+$i,u,k,j$ & 样本、原词、接口位置及特征帧的索引 \\
+$m\in\{t,a,v\}$ & 模态索引，依次为文本、语音与视觉；帧池化时$m\in\{a,v\}$ \\
+$K,\ g_i(k)$ & 固定接口长度（$K=50$）及第$k$个内容词元的父词编号 \\
+$P_{ik},\ O^m_{ik}$ & 内容位置掩码与模态观测掩码，取值均为0或1 \\
+$A_{iu}=[a_{iu},b_{iu})$ & 第$i$条样本第$u$个原词的半开时间区间（s） \\
+$J^m_{ij}=[s^m_{ij},e^m_{ij})$ & 模态$m$中第$j$个特征帧的时间支撑区间（s） \\
+$\bm f^m_{ij},\ r^m_{ij}$ & 帧级特征向量及有效性标记 \\
+$\ell^m_{ij}(A),\ \omega^m_{ij}(A)$ & 帧与锚点的有效交叠时长（s）及归一化池化权重 \\
+$\bm x^m_{iu},\ X^m_i$ & 词级池化向量及固定50位的模态特征矩阵 \\
+$c_{iu},\ d^m_{iu}$ & CTC路径置信度与词级模态覆盖指标，均位于$[0,1]$ \\
+$B,\ s$ & 边界扰动次数与扰动标准差，分别为50次和0.04\,s \\
+$V^m_{iu},\ \sigma_{im}^2$ & 扰动池化向量方差及样本内模态帧特征离散度 \\
+$\widetilde V^m_{iu}$ & 由样本内尺度归一化的边界扰动方差 \\
+$Q^m_{iu},\ \gamma_m$ & 综合质量分数及敏感度衰减系数，$\gamma_a=\gamma_v=1$ \\
+$N_i^a,\ T_i^a,\ T_i^v,\ \Delta_i$ & 音频解码样本数、两轨解码跨度及其差$\Delta_i$（s） \\
+$s^m_{ik}$ & 问题二三态变量：0为结构位、1为可观测位、2为缺失位 \\
+$H^m_{ik},\ \widetilde O^m_{ik}$ & 人工遮挡掩码及遮挡后的观测掩码 \\
+$\widetilde x^m_{ik},\ \bar X^{m,\mathrm{true}}_{ik}$ & 标准化输入及人工遮挡前的标准化特征 \\
+$e^{\mathrm{mod}}_m,\ e^{\mathrm{state}}_s,\ e^{\mathrm{pos}}_k$ & 模态嵌入、状态嵌入与位置嵌入 \\
+$e^{\mathrm{miss}}_m,\ D_m$ & 模态缺失嵌入与模态解码头 \\
+$z^m_{ik},\ \hat z^m_{ik},\ z^{m,f}_{ik}$ & 节点表示、加权补全表示与门控融合表示 \\
+$\Omega_i,\ C^{m,n}_{i,k,j},\ \pi^{m,n}_{i,k,j}$ & 样本内观测候选集合、补全代价与补全权重 \\
+$\rho^m_{ik},\ a^m_i$ & 可靠度门控权重（取值于$(0,1)$）与模态可用比例 \\
+$h^m_{ik},\ h_i$ & 时序编码隐状态与样本级表示 \\
+$y_i,\ r_i,\ \hat y_i,\ \hat r_i$ & 极性与强度真值及相应预测值 \\
+$p_i^T,\ p_i^S,\ J$ & 教师、学生类别分布及验证集联合选模指标 \\
+$\mathcal L_{\mathrm{sup}},\mathcal L_{\mathrm{dc}},\mathcal L_{\mathrm{dr}}$ & 标签监督、分类蒸馏与强度蒸馏损失 \\
+$\mathcal L_{\mathrm{rec}},\mathcal L_{\mathrm{rel}},\beta_e$ & 重建损失、可靠度损失与辅助损失权重 \\
+$w_c,\ N_c,\ N$ & 类别权重、类别样本数与训练集样本量 \\
+$T,\ \tau,\ \tau_\rho$ & 蒸馏温度、补全温度与可靠度温度 \\
+$\mathcal M_H$ & 批次内存在人工遮挡的模态集合 \\
+\end{longtable}
