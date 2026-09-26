@@ -1,0 +1,14 @@
+# LaTeX 编译产物（main.pdf 为成品，保留在版本库中）
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.loa
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+main_check.*
