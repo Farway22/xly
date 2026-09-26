@@ -688,7 +688,7 @@ J=0.5F_{\mathrm{base}}+0.5\left(\frac14\sum_{c\in\mathcal C}F_c\right)
 \end{algorithm}
 
 \begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth]{figures/q2_v4_training.png}
+\includegraphics[width=0.9\linewidth]{figures/q2_v4_training.png}
 \caption{三个学生种子的训练过程}\label{q2:fig:training}
 \end{figure}
 如图\ref{q2:fig:training}所示，三个种子的分类指标在训练初期较快上升，随后进入波动区间：每轮的遮挡场景按课程重新采样，场景难度差异会直接反映在验证指标上，因此波动主要来自训练分布的变化，而不是优化过程的不稳定。局部缺失条件下的F1整体低于基础输入，反映出信息遮挡带来的预测损失。联合准则在基础性能与缺失性能之间权衡，保存其最大值对应的学生参数。
