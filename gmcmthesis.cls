@@ -115,9 +115,9 @@
   \clearpage\setcounter{page}{1}%
   \hypersetup{pdftitle={\@title},pdfauthor={},pdfsubject={}}%
   \sbox\gmcm@titlelinebox{\parbox[t]{\papertitlewidth}{%
-    \centering\heiti\fontsize{16bp}{20.8bp}\selectfont\strut 题目\strut\par}}%
+    \centering\heiti\fontsize{14bp}{18.2bp}\selectfont\strut 题目\strut\par}}%
   \sbox\gmcm@titlebox{\parbox[t]{\papertitlewidth}{%
-    \centering\heiti\fontsize{16bp}{20.8bp}\selectfont\strut\@title\strut\par}}%
+    \centering\heiti\fontsize{14bp}{18.2bp}\selectfont\strut\@title\strut\par}}%
   \setlength\gmcm@titleextra{\dimexpr\dp\gmcm@titlebox-\dp\gmcm@titlelinebox\relax}%
   % \\[-...] in a title is not supported; use ordinary automatic wrapping.
   \ifdim\gmcm@titleextra<0pt\setlength\gmcm@titleextra{0pt}\fi
